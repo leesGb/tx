@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="274" height="30" creationComplete="group1_creationCompleteHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import deltax.graphic.effect.EffectManager;
+			import deltax.graphic.effect.render.Effect;
+			
+			import mx.events.FlexEvent;
+			
+			private var m_info:Effect;
+			
+			public function get info():Effect
+			{
+				return m_info;
+			}
+
+			public function set info(value:Effect):void
+			{
+				m_info = value;
+				updateData();
+			}
+
+			protected function group1_creationCompleteHandler(event:FlexEvent):void
+			{
+				// TODO Auto-generated method stub
+				
+			}
+			
+			private function updateData():void
+			{
+				slider.maximum = int(m_info.timeRange/m_info.frameInterval);	
+				txt.toolTip = "最大"+slider.maximum;
+			}
+			
+			protected function slider_changeHandler(event:Event):void
+			{
+				if(m_info)
+				{
+					m_info.aimFrame = slider.value;
+					EffectManager.instance.renderState = EffectManager.GOTO;
+					txt.text = m_info.aimFrame+"";
+					//
+					if(ModelTimelineView.instance.isAttachEffect.selected)
+					{
+						ModelTimelineView.instance.playActionFromFrame(m_info.aimFrame,1);
+					}
+				}				
+			}
+			
+			protected function txt_keyUpHandler(event:KeyboardEvent):void
+			{
+				if(event.keyCode==Keyboard.ENTER){
+					if(m_info){
+						var value:int = parseInt(txt.text);
+						value = Math.min(value,slider.maximum);
+						value = Math.max(0,value);
+						m_info.aimFrame = value;
+						slider.value = value;
+						EffectManager.instance.renderState = EffectManager.GOTO;
+					}
+				}
+			}
+			
+			public function bindModel(value:uint):void
+			{
+				if(m_info)
+				{
+					if(value>slider.maximum)
+					{
+						m_info.aimFrame = slider.maximum;
+						EffectManager.instance.renderState = EffectManager.PAUSE;
+					}else
+					{
+						m_info.aimFrame = value;
+						EffectManager.instance.renderState = EffectManager.GOTO;
+					}
+					slider.value = m_info.aimFrame;
+					txt.text = m_info.aimFrame+"";
+				}	
+			}
+			
+			public function reset():void
+			{
+				if(m_info == null)return;
+				EffectManager.instance.renderState = EffectManager.PLAY;
+				slider.value = 0;
+				m_info.aimFrame = 0;
+				txt.text = m_info.aimFrame+"";
+			}
+			
+			public function effectAttachModel(type:uint):void
+			{
+				if(type == 0)
+				{
+					if(m_info.aimFrame == slider.maximum)
+						m_info.aimFrame = 0;
+				}
+				//
+				if(ModelTimelineView.instance.isAttachEffect.selected)
+				{
+					ModelTimelineView.instance.playActionFromFrame(m_info.aimFrame,type);
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	
+	<s:Label x="3" y="7" width="40" text="时间轴"/>
+	<s:HSlider id="slider" x="46" y="8" width="155" change="slider_changeHandler(event)" stepSize="1"/>
+	<s:TextInput id="txt" x="210" y="3" width="57" prompt="当前帧数" keyUp="txt_keyUpHandler(event)"/>
+	
+</s:Group>

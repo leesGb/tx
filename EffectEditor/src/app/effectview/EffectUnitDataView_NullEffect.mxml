@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<effectview:EffectUnitDataView_Abst xmlns:fx="http://ns.adobe.com/mxml/2009" 
+									xmlns:s="library://ns.adobe.com/flex/spark" 
+									xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:effectview="app.effectview.*"
+		 width="828" height="684">
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import deltax.graphic.effect.data.unit.EffectUnitData;
+			import deltax.graphic.effect.data.unit.NullEffectData;
+			public function get theInfo():NullEffectData{
+				return this._info as NullEffectData;
+			}
+			override public function set info(value:EffectUnitData):void{
+				super.info = value;
+				baseId.info = value;
+				
+				updateData();
+			}
+			private function updateData():void{
+				this.m_rotate_x.text = theInfo.m_rotate.x.toString();
+				this.m_rotate_y.text = theInfo.m_rotate.y.toString();
+				this.m_rotate_z.text = theInfo.m_rotate.z.toString();
+				this.m_followSpeed.selected = theInfo.m_followSpeed;
+				this.m_startAngle.text = (theInfo.m_startAngle * 180/Math.PI).toString();
+				this.m_syncRotate.selected = theInfo.m_syncRotate;
+			}
+			
+			private function changeInfoHandler(event:Event):void{
+				theInfo.m_rotate = new Vector3D(Number(this.m_rotate_x.text),Number(this.m_rotate_y.text),Number(this.m_rotate_z.text));
+				theInfo.m_followSpeed = this.m_followSpeed.selected;
+				theInfo.m_syncRotate = this.m_syncRotate.selected;
+				theInfo.m_startAngle = Number(this.m_startAngle.text) * Math.PI/180;			
+				
+				m_startAngle.enabled = theInfo.m_syncRotate&& (theInfo.m_rotate.length>0.001);
+			}
+		]]>
+	</fx:Script>
+	<s:Label x="10" y="12" text="旋转"/>
+	<s:Label x="9" y="188" text="初始角度"/>
+	<effectview:EffectUnitDataView_Base id="baseId" x="299" y="0">
+	</effectview:EffectUnitDataView_Base>
+	<s:TextInput id="m_rotate_x" x="10" y="32" width="100" change="changeInfoHandler(event)"/>
+	<s:TextInput id="m_rotate_y" x="10" y="62" width="100" change="changeInfoHandler(event)"/>
+	<s:TextInput id="m_rotate_z" x="10" y="93" width="100" change="changeInfoHandler(event)"/>
+	<s:TextInput id="m_startAngle" x="10" y="208" change="changeInfoHandler(event)"/>
+	<s:CheckBox id="m_followSpeed" x="10" y="123" label="m_followSpeed" enabled="true" change="changeInfoHandler(event)"/>
+	<s:CheckBox id="m_syncRotate" x="10" y="152" label="m_syncRotate" enabled="true" change="changeInfoHandler(event)"/>
+	<mx:VRule x="298" y="0" height="100%" strokeColor="0" strokeWidth="2"/>
+</effectview:EffectUnitDataView_Abst>

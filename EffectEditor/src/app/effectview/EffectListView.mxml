@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 creationComplete="titlewindow1_initializeHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import app.effectview.data.EffectCommonData;
+			
+			import deltax.common.resource.DependentRes;
+			import deltax.graphic.effect.data.EffectData;
+			import deltax.graphic.effect.data.EffectGroup;
+			import deltax.graphic.effect.data.EffectVersion;
+			import deltax.graphic.effect.data.unit.EffectUnitData;
+			
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			
+			private var m_curEffectGroup:EffectGroup;
+			public var rootPath:File;
+			private var needLoadEffectName:String;
+			
+			public var effectMainView:EffectMainView;
+			
+			public function get curEffectGroup():EffectGroup
+			{
+				return m_curEffectGroup;
+			}
+
+			public function set curEffectGroup(value:EffectGroup):void
+			{
+				m_curEffectGroup = value;
+				EffectCommonData.Instance.curEffectGroup = value;
+			}
+			
+			protected function titlewindow1_initializeHandler(event:FlexEvent):void
+			{
+				EffectCommonData.Instance.effectListView = this;
+			}
+			
+			public function updateData(eg:EffectGroup):void
+			{
+				curEffectGroup = eg;
+				edViewsId.removeAllElements();
+				effectCount.text = eg.effectCount.toString();
+				//
+				for each(var effectData:EffectData in eg.m_effectDatas)
+				{
+					var edView:EffectDataView = new EffectDataView();
+					edView.deleteTheEffectFun = deleteEffectFun;
+					edView.info = effectData;
+					edView.effectMainView = effectMainView;
+					edViewsId.addElement(edView);
+					//
+					if(needLoadEffectName && effectData.fullName == needLoadEffectName)
+					{
+						edView.editEffectUnitDataHandler();
+						needLoadEffectName = "";
+					}
+				}
+				//
+				effectMainView.setViewVisible(1);
+			}
+			
+			private function deleteEffectFun(edView:EffectDataView):void
+			{
+				var delIdx:int = curEffectGroup.m_effectDatas.indexOf(edView.info);
+				if(delIdx == -1)
+				{
+					Alert.show("delete error");
+					return;
+				}
+				
+				curEffectGroup.m_effectDatas.splice(delIdx,1);
+				updateData(curEffectGroup);
+			}
+			
+			protected function createEffectUnitDataHandler(event:MouseEvent):void
+			{
+				if(curEffectGroup == null)
+				{
+					Alert.show("选择一个特效文件");
+					return;
+				}
+				//
+				var effectData:EffectData = new EffectData(curEffectGroup,"fx/m_fullName");
+				effectData.m_description = "";
+				effectData.m_attachAniNames = new Vector.<String>();
+				effectData.m_timeRange = 1000;
+				effectData.m_effectUnitDatas = new Vector.<EffectUnitData>();
+				effectData.m_orgOffset.x = 0;
+				effectData.m_orgOffset.y= 0;
+				effectData.m_orgOffset.z = 0;
+				effectData.m_orgScale.x = 0;
+				effectData.m_orgScale.y = 0;
+				effectData.m_orgScale.z = 0;
+				curEffectGroup.m_effectDatas.push(effectData);
+				updateData(curEffectGroup);
+				//
+//				Game.instance.guiView.show();
+			}
+			
+			public function saveHandler():File
+			{
+				var data:ByteArray = new ByteArray();
+				if(!curEffectGroup)return null;
+				curEffectGroup.m_version = EffectVersion.CURRENT;
+				curEffectGroup.write(data);
+				var file:File = new File(curEffectGroup.name);
+				var str:String = file.name;
+				file.save(data,str);
+				file.addEventListener(Event.COMPLETE,fileSaveComplete);
+				return file;
+			}
+			
+			public function get existEffectGroup():Boolean
+			{
+				return curEffectGroup!=null;
+			}
+			
+			public function createNewHandler():void
+			{
+				curEffectGroup = new EffectGroup();
+				curEffectGroup.m_version = EffectVersion.CURRENT;
+				curEffectGroup.name = rootPath.nativePath + "/new.eft";
+				curEffectGroup.m_dependantResList = new Vector.<DependentRes>();
+				curEffectGroup.m_effectDatas = new Vector.<EffectData>();
+				saveHandler();				
+			}
+			
+			private function fileSaveComplete(event:Event):void
+			{
+				event.currentTarget.removeEventListener(Event.SELECT,fileSaveComplete);
+				effectMainView.updateFileTree();
+			}
+			
+			protected function pasteEffectDataHanlder(event:MouseEvent):void
+			{
+				if(EffectDataView.copyEffectData)
+				{
+					if(curEffectGroup)
+					{
+						if(curEffectGroup.m_effectDatas)
+						{
+							var tmp:EffectData = EffectDataView.copyEffectData.clone();
+							tmp.m_effectGroup = curEffectGroup;
+							curEffectGroup.m_effectDatas.push(tmp);
+							var edView:EffectDataView = new EffectDataView();
+							edView.deleteTheEffectFun = deleteEffectFun;
+							edView.info = tmp;
+							edView.effectMainView = effectMainView;
+							edViewsId.addElement(edView);
+							
+							//
+							if(needLoadEffectName && tmp.fullName == needLoadEffectName)
+							{
+								edView.editEffectUnitDataHandler();
+								needLoadEffectName = "";
+							}
+						}
+					}
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<s:Label x="10" y="18" text="特效数量"/>
+	<s:TextInput id="effectCount" x="66" y="9" width="149" height="30" editable="false"/>
+	<s:Label x="10" y="49" text="特效数据列表"/>
+	<s:Scroller x="0" y="75" width="100%" height="100%">
+		<s:VGroup id="edViewsId" width="100%" height="100%" gap="10">
+		</s:VGroup>
+	</s:Scroller>
+	<s:Button x="324" y="9" width="80" height="30" label="创建特效"
+			  click="createEffectUnitDataHandler(event)"/>
+	<s:Button x="236" y="9" width="80" height="30" label="粘帖特效" click="pasteEffectDataHanlder(event)"/>
+</s:Group>

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<effectview:EffectUnitDataView_Abst xmlns:fx="http://ns.adobe.com/mxml/2009" 
+									xmlns:s="library://ns.adobe.com/flex/spark" 
+									xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:effectview="app.effectview.*" width="828" height="684">
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<fx:Script>
+			<![CDATA[
+				import deltax.graphic.effect.data.unit.EffectUnitData;
+				import deltax.graphic.effect.data.unit.ModelAnimationData;
+				public function get theInfo():ModelAnimationData{
+					return this._info as ModelAnimationData;
+				}
+				override public function set info(value:EffectUnitData):void{
+					super.info = value;
+					baseId.info = value;
+					
+					updateData();
+				}
+				private function updateData():void{
+					this.m_type.text = theInfo.m_type.toString();
+					this.figureID.text = theInfo.m_figureWeightInfo.figureID.toString();
+					this.minWeightId.text = theInfo.m_figureWeightInfo.minWeight.toString();
+					this.maxWeightId.text = theInfo.m_figureWeightInfo.maxWeight.toString();
+				}
+				
+				private function changeInfoHandler(event:Event):void{
+					theInfo.m_type = uint(this.m_type.text);
+					theInfo.m_figureWeightInfo.figureID = uint(this.figureID.text);
+					theInfo.m_figureWeightInfo.minWeight = Number(this.minWeightId.text);
+					theInfo.m_figureWeightInfo.maxWeight = Number(this.maxWeightId.text);					
+				}
+		]]>
+	</fx:Script>
+	<effectview:EffectUnitDataView_Base id="baseId" x="299" y="0">
+	</effectview:EffectUnitDataView_Base>
+	<s:Label x="10" y="15" text="m_type"/>
+	<s:TextInput id="m_type" x="82" y="10" width="198" change="changeInfoHandler(event)"/>
+	<s:Label x="11" y="59" text="figureID"/>
+	<s:TextInput id="figureID" x="82" y="49" width="199" change="changeInfoHandler(event)"/>
+	<s:Label x="10" y="89" text="minWeight"/>
+	<s:TextInput id="minWeightId" x="82" y="84" width="198" change="changeInfoHandler(event)" enabled="false"/>
+	<s:Label x="11" y="133" text="maxWeight"/>
+	<s:TextInput id="maxWeightId" x="82" y="123" width="199" change="changeInfoHandler(event)" enabled="false"/>
+	<mx:VRule x="298" y="0" height="100%" strokeColor="0" strokeWidth="2"/>
+</effectview:EffectUnitDataView_Abst>

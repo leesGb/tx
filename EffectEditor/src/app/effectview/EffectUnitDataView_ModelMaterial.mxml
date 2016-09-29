@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="utf-8"?>
+<effectview:EffectUnitDataView_Abst xmlns:fx="http://ns.adobe.com/mxml/2009" 
+									xmlns:s="library://ns.adobe.com/flex/spark" 
+									xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:effectview="app.effectview.*"
+									width="828" height="684" initialize="effectunitdataview_abst1_initializeHandler(event)">
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import deltax.graphic.effect.data.unit.EffectUnitData;
+			import deltax.graphic.effect.data.unit.ModelMaterialData;
+			import deltax.graphic.effect.data.unit.modelmaterial.AlphaInfo;
+			import deltax.graphic.effect.data.unit.modelmaterial.MaterialType;
+			import deltax.graphic.effect.data.unit.modelmaterial.ShaderInfo;
+			import deltax.graphic.effect.data.unit.modelmaterial.SystemShaderType;
+			import deltax.graphic.effect.data.unit.modelmaterial.UVInfo;
+			
+			import app.effectview.data.EffectTypeMode;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			
+			import spark.components.RadioButtonGroup;
+			import spark.events.TextOperationEvent;
+			
+			private var materialTypes:Array = null;
+			private var MATERIALTYPE:Array = ["DIFFUSE","AMBIENT","SPECULAR","EMISSIVE","TEXTURE1","TEXTURE2","TEXTURE3","TEXTURE4","TEXTURE5","TEXTURE6","TEXTURE7","TEXTURE8","TEXTUREUV","IMPORT_SHADER","SYS_SHADER","BASE_BRIGHTNESS"];
+			private var SYSTEMSHADERTYPES:Array = ["SCREEN_DISTURB","SEPERATE_ALPHA","ADD_TEXTURE_MASK","ADD_TEXTURE_MASK2"];
+			override public function set info(value:EffectUnitData):void{
+				super.info = value;
+				baseId.info = value;
+				updateData();
+			}
+			public function get theInfo():ModelMaterialData{
+				return this._info as ModelMaterialData;
+			}
+			private function updateData():void{
+				//materialTypeId
+				m_applyClasses.text = theInfo.m_applyClasses.join(";");
+				
+				if(materialTypes == null){
+					materialTypes = [scaleUVId,importShaderId,sysShaderId,alphaInfoId]
+				}
+				materialType.selectedIndex = theInfo.m_materialType;
+				for(var i:int = 0;i<materialTypes.length;i++){
+					materialTypes[i].visible = false;
+				}
+				
+				switch(theInfo.m_materialType){
+					case MaterialType.TEXTUREUV:
+						materialTypes[0].visible = true;
+						uvMinScale.text = theInfo.m_properties.uvInfo.minScale.toString();
+						uvMaxScale.text = theInfo.m_properties.uvInfo.maxScale.toString();
+						break;
+					case MaterialType.IMPORT_SHADER:
+						materialTypes[1].visible = true;
+						techniqueId.text = theInfo.m_properties.shaderInfo.technique.toString();
+						break;
+					case MaterialType.SYS_SHADER:
+						materialTypes[2].visible = true;
+						sysShaderTypeId.selectedIndex = theInfo.m_properties.sysShaderType;
+						break;
+					default:
+						materialTypes[3].visible = true;
+						alphaTest.selectedIndex = theInfo.m_properties.alphaInfo.alphaTest;
+						blendEnable.selectedIndex = theInfo.m_properties.alphaInfo.blendEnable;
+						destBlend.selectedIndex = theInfo.m_properties.alphaInfo.destBlend;
+						srcBlend.selectedIndex = theInfo.m_properties.alphaInfo.srcBlend;
+						break;
+				}
+				
+				if(theInfo.m_uvTransformTexLayers){
+					var temp:Array = [];
+					for(var j:int = 0;j<theInfo.m_uvTransformTexLayers.length;j++){
+						if(theInfo.m_uvTransformTexLayers[j] == true){
+							temp.push(j);
+						}
+					}
+					m_uvTransformTexLayers.text = temp.join(";");
+				}else{
+					m_uvTransformTexLayers.text = "null";
+				}
+				
+				m_brightnessInfo_min.text = theInfo.m_brightnessInfo.min.toString();
+				m_brightnessInfo_max.text = theInfo.m_brightnessInfo.max.toString();
+			}
+			
+			protected function changeInfoHandler(event:Event):void
+			{
+				theInfo.m_brightnessInfo.min = Number(m_brightnessInfo_min.text);
+				theInfo.m_brightnessInfo.max = Number(m_brightnessInfo_max.text);		
+				if(theInfo.m_uvTransformTexLayers == null)
+					theInfo.m_uvTransformTexLayers = [];
+				theInfo.m_uvTransformTexLayers.splice(0,theInfo.m_uvTransformTexLayers.length);
+				var uvTransforTexLayersTemp:Array = m_uvTransformTexLayers.text.split(";");
+				for(var i:int = 0;i<uvTransforTexLayersTemp.length;i++){
+					if(uvTransforTexLayersTemp[i]){
+						theInfo.m_uvTransformTexLayers[uvTransforTexLayersTemp[i]] = true;
+					}
+				}
+				theInfo.m_materialType = uint(materialType.selectedIndex);
+				for(var j:int = 0;j<materialTypes.length;j++){
+					materialTypes[j].visible = false;
+				}
+				switch(theInfo.m_materialType){
+					case MaterialType.TEXTUREUV:
+						materialTypes[0].visible = true;
+						if(theInfo.m_properties.uvInfo == null)
+							theInfo.m_properties.uvInfo = new UVInfo();
+						theInfo.m_properties.uvInfo.minScale = Number(uvMinScale.text);
+						theInfo.m_properties.uvInfo.maxScale = Number(uvMaxScale.text);						
+						break;
+					case MaterialType.IMPORT_SHADER:
+						materialTypes[1].visible = true;
+						if(theInfo.m_properties.shaderInfo == null)
+							theInfo.m_properties.shaderInfo = new ShaderInfo();
+						theInfo.m_properties.shaderInfo.technique = int(techniqueId.text);
+						break;
+					case MaterialType.SYS_SHADER:
+						materialTypes[2].visible = true;
+						theInfo.m_properties.sysShaderType = uint(sysShaderTypeId.selectedIndex);						
+						break;
+					default:						
+						materialTypes[3].visible = true;
+						if(theInfo.m_properties.alphaInfo == null){
+							theInfo.m_properties.alphaInfo = new AlphaInfo();
+							theInfo.m_properties.alphaInfo.alphaTest = 0;
+							theInfo.m_properties.alphaInfo.blendEnable = 0;
+							theInfo.m_properties.alphaInfo.destBlend = 6;
+							theInfo.m_properties.alphaInfo.srcBlend = 5;
+						}
+						theInfo.m_properties.alphaInfo.alphaTest = uint(alphaTest.selectedIndex);
+						theInfo.m_properties.alphaInfo.blendEnable = uint(blendEnable.selectedIndex);
+						theInfo.m_properties.alphaInfo.destBlend = uint(destBlend.selectedIndex);
+						theInfo.m_properties.alphaInfo.srcBlend = uint(srcBlend.selectedIndex);
+						break;
+				}
+				
+				theInfo.m_applyClasses.splice(0,theInfo.m_applyClasses.length);
+				var applyClassesTemp:Array = m_applyClasses.text.split(";");
+				for(var k:int = 0;k<applyClassesTemp.length;k++){
+					if(applyClassesTemp[k]){
+						theInfo.m_applyClasses.push(applyClassesTemp[k]);
+					}
+				}
+				
+				if(theInfo.m_materialType == MaterialType.BASE_BRIGHTNESS){
+					m_brightnessInfo_min.enabled = true;
+					m_brightnessInfo_max.enabled = true;
+				}else{
+					m_brightnessInfo_min.enabled = false;
+					m_brightnessInfo_max.enabled = false;
+				}
+			}
+			
+			protected function effectunitdataview_abst1_initializeHandler(event:FlexEvent):void
+			{
+				materialType.dataProvider = new ArrayCollection(MATERIALTYPE);
+				srcBlend.dataProvider = new ArrayCollection(MaterialListView.BLENDFACTOR_STRINGS);
+				destBlend.dataProvider = new ArrayCollection(MaterialListView.BLENDFACTOR_STRINGS);
+				blendEnable.dataProvider = new ArrayCollection(EffectTypeMode.BlendModes);
+				alphaTest.dataProvider = new ArrayCollection(EffectTypeMode.DepthTestModes);
+				sysShaderTypeId.dataProvider = new ArrayCollection(SYSTEMSHADERTYPES);
+			}
+			
+			protected function applyClassesChangeHandler(event:TextOperationEvent):void
+			{
+				var applyClassesTemp:Array = m_applyClasses.text.split(";");
+				theInfo.m_applyClasses = new Vector.<String>();
+				for(var i:int = 0;i<applyClassesTemp.length;i++){
+					if(applyClassesTemp[i]){
+						theInfo.m_applyClasses.push(applyClassesTemp[i]);
+					}
+				}
+				
+			}
+			
+		]]>
+	</fx:Script>
+	<effectview:EffectUnitDataView_Base id="baseId" x="298" y="0">
+	</effectview:EffectUnitDataView_Base>
+	<s:Label x="10" y="325" text="m_uvTransformTexLayers"/>
+	<s:Label x="11" y="380" text="m_brightnessInfo"/>
+	<s:Label x="10" y="406" text="min"/>
+	<s:Label x="10" y="433" text="max"/>
+	<s:TextInput x="41" y="400" id="m_brightnessInfo_min" change="changeInfoHandler(event)"/>
+	<s:TextInput x="41" y="430" id="m_brightnessInfo_max" change="changeInfoHandler(event)"/>
+	<s:Label x="10" y="99" text="材质类型"/>
+	<s:Group x="10" y="163" width="267" height="153">
+		<s:Group id="scaleUVId" width="100%" height="100%">
+			<s:Label x="7" y="11" text="uv minScale"/>
+			<s:Label x="7" y="35" text="uv maxScale"/>
+			<s:TextInput id="uvMinScale" x="83" y="6" change="changeInfoHandler(event)"/>
+			<s:TextInput id="uvMaxScale" x="83" y="32" change="changeInfoHandler(event)"/>
+		</s:Group>
+		<s:Group id="importShaderId" width="100%" height="100%">
+			<s:Label x="7" y="11" text="technique"/>
+			<s:TextInput id="techniqueId" x="83" y="6" change="changeInfoHandler(event)" enabled="false"/>
+		</s:Group>
+		<s:Group id="sysShaderId" width="100%" height="100%">
+			<s:Label x="7" y="11" text="sysShaderType"/>
+			<s:ComboBox id="sysShaderTypeId" x="98" y="6" change="changeInfoHandler(event)"/>
+		</s:Group>
+		<s:Group id="alphaInfoId" x="0" y="0" width="100%" height="100%">
+			<s:Label x="6" y="11" text="blendEnable"/>
+			<s:Label x="6" y="35" text="alphaTest"/>
+			<s:Label x="7" y="64" text="srcBlend"/>
+			<s:Label x="7" y="88" text="destBlend"/>			
+			<s:ComboBox x="83" y="32" id="alphaTest" change="changeInfoHandler(event)"/>
+			<s:ComboBox x="83" y="6" id="blendEnable" change="changeInfoHandler(event)"/>			
+			<s:ComboBox x="82" y="59" id="srcBlend" change="changeInfoHandler(event)"/>
+			<s:ComboBox x="82" y="85" id="destBlend" change="changeInfoHandler(event)"/>			
+		</s:Group>
+	</s:Group>
+	<mx:HRule x="10" y="153" width="200" height="1"/>
+	<s:TextInput x="10" y="342" width="266" id="m_uvTransformTexLayers" change="changeInfoHandler(event)" enabled="false"/>
+	<s:ComboBox id="materialType" x="10" y="119" width="267" change="changeInfoHandler(event)"/>
+	<s:Label x="10" y="10" text="模型的piececlass name，分号(;)区分"/>
+	<s:TextArea id="m_applyClasses" x="10" y="30" width="267" height="61" change="applyClassesChangeHandler(event)"/>
+	<mx:VRule x="298" y="0" height="100%" strokeColor="0" strokeWidth="2"/>
+</effectview:EffectUnitDataView_Abst>

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="238" height="74">
+	<fx:Script>
+		<![CDATA[
+			import deltax.graphic.effect.data.unit.ModelConsoleData;
+			
+			import app.effectview.data.EffectCommonData;
+			
+			import spark.events.TextOperationEvent;
+			public var idx:int;
+			public var info:ModelConsoleData;
+			protected function changeInfoHandler(event:TextOperationEvent):void
+			{
+				if(info.m_pieceGroup && idx<info.m_pieceGroup.m_pieceClasses.length){
+					m_className.text = info.m_pieceGroup.m_pieceClasses[idx].m_name;
+				}
+				info.m_pieceClassIndice[idx] = int(m_pieceClassIndice.text);
+				info.m_pieceMaterialIndice[idx] = int(m_pieceMaterialIndice.text);	
+								
+				if(EffectCommonData.Instance.effectMainView.effectTimelineView.previewEffectFun!=null)
+				{
+					EffectCommonData.Instance.effectMainView.effectTimelineView.previewEffectFun();
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<s:Label x="11" y="27" text="class"/>
+	<s:TextInput id="m_className" x="9" y="-1" width="95" height="20" editable="false" borderAlpha="0"/>
+	<s:Label x="7" y="55" text="material"/>
+	<s:TextInput id="m_pieceClassIndice" x="57" y="22" width="171" change="changeInfoHandler(event)"/>
+	<s:TextInput id="m_pieceMaterialIndice" x="57" y="49" width="171" change="changeInfoHandler(event)"/>
+	<mx:HRule x="10" y="3" width="218" height="0"/>
+</s:Group>

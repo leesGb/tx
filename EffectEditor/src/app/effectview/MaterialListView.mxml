@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" width="868" height="640" title="material list view"  close="titlewindow1_closeHandler(event)" initialize="titlewindow1_initializeHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import com.hmh.utils.FileHelper;
+			
+			import deltax.appframe.BaseApplication;
+			import deltax.common.resource.Enviroment;
+			import deltax.graphic.manager.IResource;
+			import deltax.graphic.manager.ResourceManager;
+			import deltax.graphic.manager.ResourceType;
+			import deltax.graphic.material.Material;
+			import deltax.graphic.material.SkinnedMeshMaterial;
+			
+			import flash.display3D.Context3DBlendFactor;
+			import flash.display3D.Context3DTriangleFace;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			import spark.components.RadioButtonGroup;
+			
+			private var fileList:Array;
+			[Bindable]
+			private var m_cullModeRG:RadioButtonGroup = new RadioButtonGroup();;
+			
+			[Bindable]
+			private var m_techniqueNameRG:RadioButtonGroup = new RadioButtonGroup();
+			
+			public static const BLENDFACTOR_STRINGS:Array = ["", Context3DBlendFactor.ZERO, Context3DBlendFactor.ONE, Context3DBlendFactor.SOURCE_COLOR, Context3DBlendFactor.ONE_MINUS_SOURCE_COLOR, Context3DBlendFactor.SOURCE_ALPHA, Context3DBlendFactor.ONE_MINUS_SOURCE_ALPHA, Context3DBlendFactor.DESTINATION_ALPHA, Context3DBlendFactor.ONE_MINUS_DESTINATION_ALPHA, Context3DBlendFactor.DESTINATION_COLOR, Context3DBlendFactor.ONE_MINUS_DESTINATION_COLOR];
+			protected function titlewindow1_initializeHandler(event:Event):void
+			{
+				
+				
+				
+				fileList = [];
+				var aaa:String = Enviroment.ResourceRootPath;
+				// TODO Auto-generated method stub
+				var foler:File = new File(Enviroment.ResourceRootPath + "mat");
+				if(foler.isDirectory){
+					for each(var maFile:File in foler.getDirectoryListing()){
+						if(!maFile.isDirectory && maFile.extension == "mtr"){
+							var obj:Object = new Object();
+							obj.name = maFile.name;
+							obj.nativePath = maFile.nativePath;
+							obj.data = maFile;
+							fileList.push(obj);
+						}
+					}
+				}
+				treeId.dataProvider = new ArrayCollection(fileList);
+				
+				
+				m_srcBlendFunc.dataProvider = new ArrayCollection(BLENDFACTOR_STRINGS);
+				m_destBlendFunc.dataProvider = new ArrayCollection(BLENDFACTOR_STRINGS);
+			}
+			
+			private var curFile:File;
+			private function treeId_clickHandler(event:MouseEvent):void{
+				if(treeId.selectedItem == null)return;
+				curFile = treeId.selectedItem.data as File;
+				ResourceManager.instance.getResource(curFile.nativePath, ResourceType.MATERIAL, onMaterialLoad);
+			}
+			private var curMaterial:Material;
+			
+			private function onMaterialLoad(ma:IResource, b:Boolean):void{
+				if (!b){
+					ma.release();
+					return;
+				}
+				curMaterial = Material(ma);
+				updateData(curMaterial);
+			}
+			
+			private function updateData(material:Material):void{
+				m_techniqueNameRG.selectedValue = material.m_techniqueName;
+				m_alphaBlendEnable.selected = material.m_alphaBlendEnable;
+				m_srcBlendFunc.selectedIndex = material.m_srcBlendFunc;
+				m_destBlendFunc.selectedIndex = material.m_destBlendFunc;
+				m_alphaTestEnable.selected = material.m_alphaTestEnable;
+				m_alphaTestFunc.text = material.m_alphaTestFunc.toString();
+				m_alphaRef.text = (material.m_alphaRef/0xFF).toString();
+				m_zTestEnable.selected = material.m_zTestEnable;
+				m_zWriteEnable.selected = material.m_zWriteEnable;
+				m_zTestFunc.text = material.m_zTestFunc.toString();//
+				m_cullModeRG.selectedValue = material.m_cullMode;
+				m_fillMode.text = material.m_fillMode.toString();//
+				m_diffuseColor.text = "0x" + material.m_diffuseColor.toString(16);
+				m_ambientColor.text = "0x" + material.m_ambientColor.toString(16);
+				m_specularColor.text = "0x" + material.m_specularColor.toString(16);
+				m_emissiveColor.text = "0x" + material.m_emissiveColor.toString(16);
+				m_specularPower.text = material.m_specularPower.toString();//
+				m_fogMaterial.text = material.m_fogMaterial.toString();//
+			}
+			
+			protected function titlewindow1_closeHandler(event:CloseEvent):void
+			{
+				PopUpManager.removePopUp(this);
+			}
+			
+			private function saveMaterialHandler():void{
+				var material:Material = curMaterial;
+				material.m_techniqueName = String(m_techniqueNameRG.selectedValue);
+				material.m_alphaBlendEnable = m_alphaBlendEnable.selected;
+				material.m_srcBlendFunc = m_srcBlendFunc.selectedIndex;
+				material.m_destBlendFunc = m_destBlendFunc.selectedIndex;
+				material.m_alphaTestEnable = m_alphaTestEnable.selected;
+				material.m_alphaTestFunc = uint(m_alphaTestFunc.text);
+				material.m_alphaRef = uint(Number(m_alphaRef.text) * 0xFF);
+				material.m_zTestEnable = m_zTestEnable.selected;
+				material.m_zWriteEnable = m_zWriteEnable.selected;
+				material.m_zTestFunc = uint(m_zTestFunc.text);
+				material.m_cullMode = uint(m_cullModeRG.selectedValue);
+				material.m_fillMode = uint(m_fillMode.text);
+				material.m_diffuseColor = parseInt(m_diffuseColor.text);
+				material.m_ambientColor = parseInt(m_ambientColor.text);
+				material.m_specularColor = parseInt(m_specularColor.text);
+				material.m_emissiveColor = parseInt(m_emissiveColor.text);
+				material.m_specularPower = Number(m_specularPower.text);
+				material.m_fogMaterial = uint(m_fogMaterial.text);
+				
+				var data:ByteArray = new ByteArray();
+				data.endian = Endian.LITTLE_ENDIAN;
+				material.write(data);
+				FileHelper.saveByteArrayToFile(data,curFile.nativePath);
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<mx:Tree id="treeId" x="6" y="8" width="276" height="589" labelField="name" dataTipField="nativePath" showDataTips="true" showRoot="false" click="treeId_clickHandler(event)"></mx:Tree>
+	<s:Label x="300" y="13" text="m_techniqueName"/>
+	<s:Label x="300" y="46" text="m_srcBlendFunc"/>
+	<s:Label x="300" y="76" text="m_destBlendFunc"/>
+	<s:Label x="300" y="107" text="m_alphaTestFunc"/>
+	<s:TextInput id="m_alphaTestFunc" x="422" y="104" width="279" enabled="false"/>
+	<s:Label x="300" y="136" text="m_alphaRef"/>
+	<s:TextInput id="m_alphaRef" x="422" y="133" width="279"/>
+	<s:Label x="300" y="290" text="m_zTestFunc"/>
+	<s:TextInput id="m_zTestFunc" x="422" y="287" width="279" enabled="false"/>
+	<s:Label x="300" y="319" text="m_cullMode"/>
+	<s:Label x="300" y="349" text="m_fillMode"/>
+	<s:TextInput id="m_fillMode" x="422" y="346" width="279" enabled="false"/>
+	<s:Label x="300" y="383" text="m_diffuseColor"/>
+	<s:TextInput id="m_diffuseColor" x="422" y="380" width="279"/>
+	<s:Label x="300" y="413" text="m_ambientColor"/>
+	<s:TextInput id="m_ambientColor" x="422" y="410" width="279"/>
+	<s:Label x="300" y="442" text="m_specularColor"/>
+	<s:TextInput id="m_specularColor" x="422" y="439" width="279"/>
+	<s:Label x="300" y="472" text="m_emissiveColor"/>
+	<s:TextInput id="m_emissiveColor" x="422" y="469" width="279"/>
+	<s:Label x="300" y="500" text="m_specularPower"/>
+	<s:TextInput id="m_specularPower" x="422" y="497" width="279" enabled="false"/>
+	<s:Label x="300" y="530" text="m_fogMaterial"/>
+	<s:TextInput id="m_fogMaterial" x="422" y="527" width="279" enabled="false"/>
+	<s:RadioButton x="425" y="320" label="NONE" value="1" group="{m_cullModeRG}"/>
+	<s:RadioButton x="489" y="320" label="FRONT" value="2" group="{m_cullModeRG}"/>
+	<s:RadioButton x="557" y="320" label="BACK"  value="3" group="{m_cullModeRG}"/>
+	<s:Label x="625" y="324" text="(Context3DTriangleFace)"/>
+	<s:ComboBox id="m_srcBlendFunc" x="422" y="44" width="279"/>
+	<s:ComboBox id="m_destBlendFunc" x="422" y="76" width="279"/>
+	<s:RadioButton x="499" y="9" label="SPECULAR" value="SpecularTexture" group="{m_techniqueNameRG}"/>
+	<s:RadioButton x="588" y="9" label="EMISSIVE" value="DefaultEmissive" group="{m_techniqueNameRG}"/>
+	<s:RadioButton x="668" y="9" label="SHADOW" value="shadow" group="{m_techniqueNameRG}"/>
+	<s:RadioButton x="423" y="9" label="DEFAULT" value="Default" group="{m_techniqueNameRG}"/>	
+	<s:Button x="786" y="10" label="save" click="saveMaterialHandler()"/>
+	<s:CheckBox id="m_alphaBlendEnable" x="299" y="174" label="m_alphaBlendEnable"/>
+	<s:CheckBox id="m_alphaTestEnable" x="450" y="174" label="m_alphaTestEnable" enabled="false"/>
+	<s:CheckBox id="m_zTestEnable" x="595" y="174" label="m_zTestEnable"/>
+	<s:CheckBox id="m_zWriteEnable" x="299" y="200" label="m_zWriteEnable"/>
+</s:TitleWindow>

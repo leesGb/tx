@@ -1,0 +1,904 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="1414" height="250"
+		 creationComplete="group1_creationCompleteHandler(event)">
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import app.effectview.data.EffectCommonData;
+			import app.equipment.DressingRoom;
+			import app.equipment.EquipClassType;
+			import app.equipment.EquipItemParam;
+			import app.equipment.EquipsInUse;
+			import app.manager.ModelManager;
+			
+			import deltax.common.math.Quaternion;
+			import deltax.common.resource.Enviroment;
+			import deltax.graphic.animation.EnhanceSkeletonAnimationNode;
+			import deltax.graphic.animation.EnhanceSkeletonAnimator;
+			import deltax.graphic.effect.EffectUnitType;
+			import deltax.graphic.effect.data.EffectGroup;
+			import deltax.graphic.effect.data.unit.EffectUnitData;
+			import deltax.graphic.effect.render.Effect;
+			import deltax.graphic.model.AniSequenceHeaderInfo;
+			import deltax.graphic.model.Animation;
+			import deltax.graphic.model.AnimationGroup;
+			import deltax.graphic.model.FrameString;
+			import deltax.graphic.model.Skeletal;
+			import deltax.graphic.scenegraph.object.RenderObjLinkType;
+			import deltax.graphic.scenegraph.object.RenderObject;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.UIComponent;
+			import mx.events.FlexEvent;
+			
+			import spark.events.IndexChangeEvent;
+			
+			public static var instance:ModelTimelineView;
+			public static const CHANGE_BIND:String = "CHANGE_BIND";
+			public static const CHANGE_BIND_CANEL:String = "CHANGE_BIND_CANEL";
+			
+			public static const ATTACH_ARR:Array = ["FIXED","SOCKET_IGNORE_ROTATE","SKELETAL_IGNORE_ROTATE","SOCKET","SKELETAL",
+				"SOCKET_IGNORE_ROTATE_FOLLOW_ROOT_ROTATE","SKELETAL_IGNORE_ROTATE_FOLLOW_ROOT_ROTATE",
+				"FIXED_IGNORE_SCALE","SOCKET_IGNORE_ROTATE_AND_SCALE","SEKLETAL_IGNORE_ROTATE_AND_SCALE",
+				"SOCKET_IGNORE_SCALE","SKELETAL_IGNORE_SCALE","SOCKET_IGNORE_ROTATE_AND_SCALE_FOLLOW_ROOT_ROTATE",
+				"SKELETAL_IGNORE_ROTATE_AND_SCALE_FOLLOW_ROOT_ROTATE"];
+			
+			private var _info:RenderObject;
+			private var m_animation:Animation;
+			private var m_frameStrings:Vector.<FrameString>;
+			private var m_curFrame:int = -1;
+			public var mainView:EffectEditor;
+			private var aniGroupLoader:ModelAniGroupLoader;
+			private var m_showAni:String;
+			private var timeContent:UIComponent;
+			private var dragBtn:UIComponent;
+			private var isDrag:Boolean;
+			
+			public var curRenderObject:RenderObject;
+			public var curClickObj:String="";
+			public var flagObjList:Dictionary = new Dictionary();
+			
+			public var isBindEffect:Boolean;
+			public var curEffectData:EffectUnitData;
+			
+			private var modelTypeArr:Array = ["role","partner","weapon","npc","mount"];
+			private var m_equipsInUse:EquipsInUse;
+			private var attachEquipItemParam:EquipItemParam;
+			private var isMove:Boolean;
+			private var selectName:String;
+			
+			//fsCB4==角色类型    fsCB3==挂点类型  fsCB==播放节点   fsCB==模型列表  fsCB1==动作列表  fsCB2==骨骼列表  fsCB6==武器列表  fsCB7==武器挂点列表
+			
+			protected function group1_creationCompleteHandler(event:FlexEvent):void
+			{
+				instance = this;
+				timeContent = new UIComponent();
+				timeContent.graphics.lineStyle(1,0xcccccc);
+				timeContent.graphics.beginFill(0xffffff);
+				timeContent.graphics.drawRect(0,0,1000,50);
+				timeContent.graphics.endFill();
+				
+				dragBtn = new UIComponent();
+				dragBtn.buttonMode = true;
+				dragBtn.graphics.beginFill(0x000000);
+				dragBtn.graphics.drawRect(0,0,10,20);
+				dragBtn.graphics.endFill();
+				dragBtn.x = 0;
+				dragBtn.y = 30;
+				timeContent.addChild(dragBtn);
+				
+				contentId.addElement(timeContent);
+
+				
+				fsCB4.dataProvider = new ArrayCollection(modelTypeArr);//
+				fsCB3.dataProvider = new ArrayCollection(ATTACH_ARR);
+				fsCB3.selectedIndex = 0;
+				fsCB4.selectedIndex = 0;
+				addEvents();
+				//
+				ModelManager.getInstance().addEventListener(ModelManager.CHANGE_MODEL,__changeModelHandler);
+			}
+			
+			private function __changeModelHandler(evt:Event):void
+			{
+				setTimeout(changeModel,1000);
+			}
+			
+			private function changeModel():void
+			{
+				fsCB1.dataProvider = null;
+				fsCB2.dataProvider = null;
+				fsCB7.dataProvider=null;
+				curRenderObject = ModelManager.getInstance().modelRenderObj;
+//				curRenderObject.occlusionEffect = true;
+				rotationChange.value = 0;
+				var arr:Array = [];
+				var animationGroup:AnimationGroup = curRenderObject.m_aniGroup;
+				if(animationGroup && animationGroup.m_aniSequenceHeaders)
+				{
+					for (var i:int = 0; i < animationGroup.m_aniSequenceHeaders.length; i++ ) 
+					{
+						arr.push(animationGroup.m_aniSequenceHeaders[i]);
+					}
+				}
+				fsCB1.dataProvider = new ArrayCollection(arr);
+				if(arr.length>0)
+				{
+					fsCB1.selectedIndex = 0;
+				}
+				
+				var socketArr:Array = [];
+				var skeletonArr:Array = [];
+				if(animationGroup && animationGroup.m_gammaSkeletals)
+				{
+					for (var j:int = 0; j < animationGroup.m_gammaSkeletals.length; j++ ) 
+					{
+						skeletonArr.push(animationGroup.m_gammaSkeletals[j]);
+						
+						 if(animationGroup.m_gammaSkeletals[j].m_sockets)
+						{
+							for(var k:int = 0;k<animationGroup.m_gammaSkeletals[j].m_sockets.length;k++)
+							{
+								socketArr.push(animationGroup.m_gammaSkeletals[j].m_sockets[k]);
+							}
+						} 
+					}
+				}
+				fsCB2.dataProvider = new ArrayCollection(skeletonArr);
+				fsCB7.dataProvider = new ArrayCollection(socketArr);
+				if(skeletonArr.length>0)
+				{
+					if(curEffectData&&isBindEffect)
+					{
+						var skeletalName:String = curEffectData.attachName;
+						var skeletalIndex:int = getSkeletalIndex(skeletonArr,skeletalName);
+						if(skeletalIndex>-1)
+						{
+							fsCB2.selectedIndex = skeletalIndex;	
+						}else
+						{
+							fsCB2.selectedIndex = 0;
+						}
+						fsCB3.selectedIndex = curEffectData.updatePos;
+						fsCB4.selectedIndex = getModelType(curEffectData.amsName);
+						fsCB4_changeHandler(null);
+						fsCB0.selectedIndex = getModelIndex(curEffectData.amsName);
+//						bindSkeletal.enabled = false;
+					}else
+					{
+						fsCB2.selectedIndex = 0;	
+					}
+				}
+				
+				
+//				SkeletonPreview.getInstance().add(curRenderObject);
+				
+				this.info = curRenderObject;
+				
+				if(isBindEffect)
+				{
+//					isBindEffect = false;
+					setLinkEffect();
+				}
+				//
+				if(curRenderObject.curAniName)
+					playAni(curRenderObject.curAniName);
+			}
+			
+			private function getSkeletalIndex(skeletonArr:Array,name:String):int
+			{
+				var len:uint = skeletonArr.length;
+				for(var i:uint = 0;i<len;i++)
+				{
+					if(Skeletal(skeletonArr[i]).m_name == name)
+					{
+						var matrix:Matrix3D = Skeletal(skeletonArr[i]).m_inverseBindPose.clone();
+						var orientaion:Quaternion = new Quaternion();
+						orientaion.fromMatrix(matrix);
+						var eulerangle:Vector3D = new Vector3D();
+						orientaion.toEulerAngles(eulerangle);
+						this.oX.text = eulerangle.x.toFixed(10);
+						this.oY.text = eulerangle.y.toFixed(10);
+						this.oZ.text = eulerangle.z.toFixed(10);
+						
+						var postionVec:Vector3D = matrix.position;
+						this.pX.text = postionVec.x.toFixed(10);
+						this.pY.text = postionVec.y.toFixed(10);
+						this.pZ.text = postionVec.z.toFixed(10);
+						return i;
+					}
+				}
+				return -1;
+			}
+			
+			private function getModelIndex(name:String):int
+			{
+				var arr:Array = name.split("/");
+				var str:String = arr[arr.length-1];
+				var source:Array = ArrayCollection(fsCB0.dataProvider).source;
+				var len:uint = source.length;
+				for(var i:uint = 0;i<len;i++)
+				{
+					if(source[i].name == str)
+					{
+						return i;
+					}
+				}
+				return -1;
+			}
+			
+			private function getModelType(name:String):int
+			{
+				var index:int = -1;
+				var arr:Array = name.split("/");
+				if(arr.indexOf("weapon")>-1)
+				{
+					index = modelTypeArr.indexOf("weapon");
+				}else
+				{
+					index = modelTypeArr.indexOf(arr[0]);
+				}
+				return index;
+			}
+			
+			public function updateFileTree():void
+			{
+				var file:File= new File(Enviroment.ResourceRootPath + "/role/mod");
+				var arr:Array = [];
+				checkFileArr(file,arr);
+				var ac:ArrayCollection = new ArrayCollection(arr);		
+				fsCB0.dataProvider = ac;
+				//
+				/* var weaponFile:File = new File(Enviroment.ResourceRootPath + "/role/mod/weapon");
+				var weaponArr:Array = [];
+				checkFileArr(weaponFile,weaponArr);
+				var weaponAc:ArrayCollection = new ArrayCollection(weaponArr);		
+				fsCB6.dataProvider = weaponAc; */
+				
+				setTimeout(updateWeaponList,2000);
+//				updateWeaponList();
+			}
+			
+			private function updateWeaponList():void
+			{
+				var m_equipmentPackages:Dictionary = DressingRoom.Instance.m_equipGroups[3].m_equipmentPackages;
+				var arr:Array=[];
+				var obj:Object;
+				for(var childIdx:String in m_equipmentPackages["weapon"])
+				{
+					obj = new Object();
+					obj.name = childIdx;
+					arr.push(obj);
+				}
+				fsCB6.dataProvider =  new ArrayCollection(arr);
+			}
+			
+			private function checkFileArr(parentFile:File,arr:Array,type:uint = 0):void
+			{
+				for each(var file:File in parentFile.getDirectoryListing())
+				{
+					if(file.name.indexOf("svn") == -1)
+					{	
+						if(type==0)
+						{
+							if(file.name.indexOf("weapon")>-1)continue;	
+						}
+						if(file.name.indexOf(".ams") == -1)continue;
+						var obj:Object = new Object();
+						arr.push(obj);
+						obj.name = file.name;
+						obj.data = file;
+						
+						if(file.isDirectory)
+						{
+							var childArr:Array = [];
+							checkFileArr(file,childArr,type);
+							obj.children = new ArrayCollection(childArr);
+						}else
+						{
+							obj.children = null;
+						}
+					}
+				}
+			}
+			
+			private function addEvents():void
+			{
+				dragBtn.addEventListener(MouseEvent.MOUSE_DOWN,mouseDownHandler);
+				timeContent.addEventListener(MouseEvent.MOUSE_MOVE,mouseMoveHandler);
+				dragBtn.addEventListener(MouseEvent.MOUSE_UP,mouseUpHandler);
+				this.addEventListener(Event.ENTER_FRAME,onEnterFrame);
+			}
+			
+			private function onEnterFrame(event:Event):void
+			{
+				if(curRenderObject&&isMove&&!isDrag)
+				{
+					var curFrame:int;
+					var node:EnhanceSkeletonAnimationNode = EnhanceSkeletonAnimator(curRenderObject.animationController).getCurAnimationNode(0);
+					if(node)
+					{
+						curFrame = node.curFrame;
+						dragBtn.x = curFrame*10;
+						curFrameText.text = curFrame*Animation.DEFAULT_FRAME_INTERVAL+"";
+						if(isAttachEffect.selected)
+						{
+							AttachEffect_clickHandler(curFrame);
+						}
+					}
+				}
+			}
+			
+			protected function mouseDownHandler(event:MouseEvent):void
+			{
+				dragBtn.startDrag(false,new Rectangle(0,30,(m_animation.frameCount - 1) * 10,0));
+				event.stopImmediatePropagation();
+				isDrag = true;
+			}
+			protected function mouseUpHandler(event:MouseEvent):void{
+				dragBtn.stopDrag();
+				dragBtn.x = int(dragBtn.x/10) * 10;
+				isDrag = false;
+			}
+			protected function mouseMoveHandler(event:MouseEvent):void
+			{
+				if(isDrag)
+				{
+					var curFrame:int = int(dragBtn.x/10);
+					if(m_curFrame!= curFrame)
+					{
+						m_curFrame = curFrame;
+						EnhanceSkeletonAnimator(info.animationController).play(m_showAni,curFrame,curFrame,curFrame + 1);
+						//
+						curFrameText.text = curFrame*Animation.DEFAULT_FRAME_INTERVAL+"";
+						//
+						AttachEffect_clickHandler(curFrame);
+					}
+				}
+			}
+
+			
+			
+			public function set info(value:RenderObject):void
+			{
+				this._info = value;
+			}
+			
+			
+			public function playAni(str:String,type:uint = 0):void
+			{
+				if(type!=0)
+				{
+					isMove = false;
+				}else
+				{
+					isMove = true;
+				}
+				m_showAni = str;
+				if(info.aniGroup == null)
+				{
+					info.addAniGroupLoadHandler(aniGroupLoadedHandler);
+				}else
+				{
+					aniGroupLoadedHandler();
+				}
+			}
+			private function aniGroupLoadedHandler():void
+			{
+				var m_aniSequenceHeaderInfo:AniSequenceHeaderInfo = info.aniGroup.m_aniSequenceHeaders[info.aniGroup.getAniIndexByName(m_showAni)];
+				m_frameStrings = m_aniSequenceHeaderInfo.frameStrings;
+				
+				var animation:Animation = info.aniGroup.getAnimationData(m_showAni);
+				if(animation == null)
+				{
+					aniGroupLoader = new ModelAniGroupLoader();
+					aniGroupLoader.m_onAniLoaded = onAniGrouLoaded;
+					aniGroupLoader.m_aniGroup = info.aniGroup;
+					aniGroupLoader.m_requireAniName = m_showAni;
+					info.aniGroup.addAniLoadHandler(aniGroupLoader);
+				}else
+				{
+					onAniGrouLoaded();					
+				}
+			}
+			public function get info():RenderObject{
+				return this._info;
+			}
+			
+			private function onAniGrouLoaded():void
+			{
+				updateData();
+			}
+			
+			public function updateData():void
+			{
+				m_animation = info.aniGroup.getAnimationData(m_showAni);
+				var rec:Rectangle = new Rectangle();
+				rec.x = 0;
+				rec.y = 0;
+				rec.width = 9;
+				rec.height = 30;
+				
+				timeContent.graphics.clear();
+				timeContent.graphics.lineStyle(1,0xcccccc);
+				var fillColor:uint;
+				for(var i:int = 0;i<m_animation.frameCount;i++)
+				{
+					rec.x = i * 10;
+					fillColor = 0x000000;
+					for each(var frameString:FrameString in m_frameStrings)
+					{
+						if(frameString.m_frameID == i)
+						{
+							fillColor = 0xff0000;
+							break;
+						}
+					}
+					timeContent.graphics.beginFill(fillColor);
+					timeContent.graphics.drawRect(rec.x,rec.y,rec.width,rec.height);
+				}
+				timeContent.graphics.endFill();	
+				//
+				playTime.text = m_animation.frameCount*Animation.DEFAULT_FRAME_INTERVAL+"";
+			}
+			
+			//模型列表变化
+			protected function fsCB0_changeHandler(event:IndexChangeEvent):void
+			{
+				if(event.oldIndex == event.newIndex)return;
+				var effectG:EffectGroup = EffectCommonData.Instance.effectListView.curEffectGroup;
+				if(curRenderObject&&effectG)
+				{
+					var arr:Array = effectG.name.split("/");
+					var linkName:String = arr[arr.length-1];
+					curRenderObject.removeLinkObject(linkName,RenderObjLinkType.CENTER);
+				}
+				var name:String = fsCB0.selectedItem.name;
+				var mype:String = getModelTypeStr();
+				ModelManager.getInstance().loadAms(mype+"/"+name);
+				//
+				if(modelTypeArr[fsCB4.selectedIndex] == "weapon")return;
+				var str:String = name.replace(".ams",".ans");
+				ModelManager.getInstance().loadAniGroupHandler(modelTypeArr[fsCB4.selectedIndex]+"/ani/"+str);
+			}
+			
+			private function getModelTypeStr():String
+			{
+				var typeName:String = modelTypeArr[fsCB4.selectedIndex];
+				var path:String = "";
+				if(typeName == "weapon")
+				{
+					path = "role/mod/"+typeName;
+				}else
+				{
+					path =typeName+"/mod";
+				}
+				return path;
+			}
+			
+			//动作列表发生变化
+			protected function fsCB1_changeHandler(event:IndexChangeEvent):void
+			{
+				if(event.oldIndex == event.newIndex)return;
+				var playName:String = fsCB1.selectedItem.rawAniName;
+				curRenderObject.playAni(playName);
+				//
+				playAni(playName);
+			}
+			
+			//骨骼发生变化
+			protected function fsCB2_changeHandler(event:IndexChangeEvent):void
+			{
+				if(event.oldIndex == event.newIndex)return;
+				var skeletal:Skeletal = fsCB2.selectedItem as Skeletal;
+				var matrix:Matrix3D = skeletal.m_inverseBindPose.clone();
+				
+				var orientaion:Quaternion = new Quaternion();
+				orientaion.fromMatrix(matrix);
+				var eulerangle:Vector3D = new Vector3D();
+				orientaion.toEulerAngles(eulerangle);
+				this.oX.text = eulerangle.x.toFixed(10);
+				this.oY.text = eulerangle.y.toFixed(10);
+				this.oZ.text = eulerangle.z.toFixed(10);
+				
+				var postionVec:Vector3D = matrix.position;
+				this.pX.text = postionVec.x.toFixed(10);
+				this.pY.text = postionVec.y.toFixed(10);
+				this.pZ.text = postionVec.z.toFixed(10);
+				//
+				if(bindSkeletal.label == "取消绑定")
+				{
+					changeLabel(1);
+				}
+			}
+			
+			//骨骼类型发生变化
+			protected function fsCB3_changeHandler(event:IndexChangeEvent):void
+			{
+				if(event.oldIndex == event.newIndex)return;
+				if(bindSkeletal.label == "取消绑定")
+				{
+					changeLabel(1);
+				}
+			}
+			
+			//角色类型发生变化
+			protected function fsCB4_changeHandler(event:IndexChangeEvent):void
+			{
+				if(event&&event.newIndex == event.oldIndex)
+				{
+					return;
+				}
+				//
+				var path:String = getModelTypeStr();
+				var file:File= new File(Enviroment.ResourceRootPath + path);
+				var arr:Array = [];
+				var type:uint = (modelTypeArr[fsCB4.selectedIndex] == "weapon")?1:0;
+				checkFileArr(file,arr,type);
+				var ac:ArrayCollection = new ArrayCollection(arr);				
+				fsCB0.dataProvider = ac;
+			}
+			
+			private function clickPlayHandler(event:MouseEvent):void
+			{
+				var playName:String = fsCB1.selectedItem.rawAniName;
+				curRenderObject.playAni(playName);
+				//
+				playAni(playName);
+				//
+				dragBtn.x = 0;
+				curFrameText.text = "0";
+			}
+			
+			public function playActionFromFrame(frame:uint,type:uint):void
+			{
+				if(fsCB1.selectedItem == null || curRenderObject == null)return;
+				var playName:String = fsCB1.selectedItem.rawAniName;
+				if(type == 0)
+				{
+					curRenderObject.playAni(playName);
+					playAni(playName);
+					//
+					dragBtn.x = 0;
+					curFrameText.text = "0";
+				}else
+				{
+					curRenderObject.playAni(playName,false,frame,frame,frame+1);
+					playAni(playName,1);
+					//
+					dragBtn.x = frame*10;
+					curFrameText.text = frame*Animation.DEFAULT_FRAME_INTERVAL+"";
+				}
+			}
+			
+			private function stopHandler(event:MouseEvent):void
+			{
+				var frame:int = 0; 
+				if(isAttachEffect.selected)
+				{
+					if(!info)return;
+					var node:EnhanceSkeletonAnimationNode = EnhanceSkeletonAnimator(curRenderObject.animationController).getCurAnimationNode(0);
+					if(!node)return;
+					frame = node.curFrame;
+					EnhanceSkeletonAnimator(info.animationController).play(m_showAni,frame,frame,frame + 1);
+					//
+					AttachEffect_clickHandler(frame);
+				}
+				//
+				dragBtn.x = frame*10;
+				curFrameText.text = frame*Animation.DEFAULT_FRAME_INTERVAL+"";
+				isMove = false;
+			}
+			
+			protected function button1_clickHandler(event:MouseEvent = null):void
+			{
+				if(fsCB1.selectedItem == null)return;
+				if(fsCB2.selectedItem == null)return;
+				if(fsCB3.selectedIndex == 0)return;
+				 if(bindSkeletal.label == "取消绑定")
+				{
+					 if(changeLabel(2))
+					 {
+						 setBtnLabel();
+					 }
+				}else if(bindSkeletal.label == "绑定骨骼")
+				{
+					if(changeLabel(1))
+					{
+						setBtnLabel();
+					}
+				}
+			}
+			
+			private function changeLabel(type:uint):Boolean
+			{
+				var effectUintData:EffectUnitData = mainView.effectMainView.effectUnitDataView.info;
+				var effectUnitView:EffectUnitDataView = mainView.effectMainView.effectUnitDataView;
+				if(effectUintData == null)return false;
+				if(type == 1)
+				{
+					effectUintData.attachName = Skeletal(fsCB2.selectedItem).m_name;
+					effectUintData.updatePos = fsCB3.selectedIndex;
+					effectUintData.amsName = getModelTypeStr()+"/"+fsCB0.selectedItem.name;
+					setEffectUnit(effectUnitView.groupView,effectUintData);
+				}else if(type == 2)
+				{
+					effectUintData.attachName = "";
+					effectUintData.updatePos = 0;
+					effectUintData.amsName="";
+					setEffectUnit(effectUnitView.groupView,effectUintData);
+				}
+				//
+				return setLinkEffect();
+			}
+			
+			private function setEffectUnit(effectUnitView:EffectUnitDataView_Abst,effectUintData:EffectUnitData):void
+			{
+				switch(effectUintData.type)
+				{
+					case EffectUnitType.PARTICLE_SYSTEM:
+						EffectUnitDataView_ParticleSystem(effectUnitView).baseId.attachName.text = effectUintData.attachName;
+						EffectUnitDataView_ParticleSystem(effectUnitView).baseId.updatePos.text = ATTACH_ARR[effectUintData.updatePos];
+						break;
+					case EffectUnitType.BILLBOARD:
+						EffectUnitDataView_Billboard(effectUnitView).baseId.attachName.text = effectUintData.attachName;
+						EffectUnitDataView_Billboard(effectUnitView).baseId.updatePos.text = ATTACH_ARR[effectUintData.updatePos];
+						break;
+					case EffectUnitType.POLYGON_TRAIL:
+						EffectUnitDataView_PolygonTrail(effectUnitView).baseId.attachName.text = effectUintData.attachName;
+						EffectUnitDataView_PolygonTrail(effectUnitView).baseId.updatePos.text = ATTACH_ARR[effectUintData.updatePos];
+						break;
+					case EffectUnitType.CAMERA_SHAKE:
+						EffectUnitDataView_CameraShake(effectUnitView).baseId.attachName.text = effectUintData.attachName;
+						EffectUnitDataView_CameraShake(effectUnitView).baseId.updatePos.text = ATTACH_ARR[effectUintData.updatePos];
+						break;
+					case EffectUnitType.MODEL_CONSOLE:
+						EffectUnitDataView_ModelConsole(effectUnitView).baseId.attachName.text = effectUintData.attachName;
+						EffectUnitDataView_ModelConsole(effectUnitView).baseId.updatePos.text = ATTACH_ARR[effectUintData.updatePos];
+						break;
+					case EffectUnitType.MODEL_MATERIAL:
+						EffectUnitDataView_ModelMaterial(effectUnitView).baseId.attachName.text = effectUintData.attachName;
+						EffectUnitDataView_ModelMaterial(effectUnitView).baseId.updatePos.text = ATTACH_ARR[effectUintData.updatePos];
+						break;
+					case EffectUnitType.SCREEN_FILTER:
+						EffectUnitDataView_ScreenFilter(effectUnitView).baseId.attachName.text = effectUintData.attachName;
+						EffectUnitDataView_ScreenFilter(effectUnitView).baseId.updatePos.text = ATTACH_ARR[effectUintData.updatePos];
+						break;
+					case EffectUnitType.NULL:
+						EffectUnitDataView_NullEffect(effectUnitView).baseId.attachName.text = effectUintData.attachName;
+						EffectUnitDataView_NullEffect(effectUnitView).baseId.updatePos.text = ATTACH_ARR[effectUintData.updatePos];
+						break;
+					case EffectUnitType.DYNAMIC_LIGHT:
+						EffectUnitDataView_DynamicLight(effectUnitView).baseId.attachName.text = effectUintData.attachName;
+						EffectUnitDataView_DynamicLight(effectUnitView).baseId.updatePos.text = ATTACH_ARR[effectUintData.updatePos];
+						break;
+					case EffectUnitType.SOUND:
+						EffectUnitDataView_SoundFX(effectUnitView).baseId.attachName.text = effectUintData.attachName;
+						EffectUnitDataView_SoundFX(effectUnitView).baseId.updatePos.text = ATTACH_ARR[effectUintData.updatePos];
+						break;
+					case EffectUnitType.MODEL_ANIMATION:
+						EffectUnitDataView_ModelAnimation(effectUnitView).baseId.attachName.text = effectUintData.attachName;
+						EffectUnitDataView_ModelAnimation(effectUnitView).baseId.updatePos.text = ATTACH_ARR[effectUintData.updatePos];
+						break;
+					case EffectUnitType.POLYGON_CHAIN:
+						EffectUnitDataView_PolygonChain(effectUnitView).baseId.attachName.text = effectUintData.attachName;
+						EffectUnitDataView_PolygonChain(effectUnitView).baseId.updatePos.text = ATTACH_ARR[effectUintData.updatePos];
+						break;
+				}
+			}
+			
+			public function setLinkEffect():Boolean
+			{
+				var effect:Effect = ModelManager.getInstance().curEffect;
+				var effectG:EffectGroup = EffectCommonData.Instance.effectListView.curEffectGroup;
+				if(!effectG)return false;
+				var arr:Array = effectG.name.split("/");
+				var linkName:String = arr[arr.length-1];
+				ModelTimelineView.instance.curRenderObject.removeLinkObject(linkName,RenderObjLinkType.CENTER);
+				ModelTimelineView.instance.curRenderObject.addLinkObject(effect,linkName,RenderObjLinkType.CENTER);
+				return true;
+			}
+			
+			private function setBtnLabel():void
+			{
+				if(ModelTimelineView.instance.bindSkeletal.label=="取消绑定")
+				{
+					ModelTimelineView.instance.bindSkeletal.label="绑定骨骼";	
+				}else
+				{
+					ModelTimelineView.instance.bindSkeletal.label="取消绑定";
+				}
+			}
+			
+			public function selectEffectModel(name:String):void
+			{
+				ModelManager.getInstance().loadAms(name);
+				//
+				var str:String = name.replace(".ams",".ans");
+				var str2:String = str.replace("mod","ani");
+				ModelManager.getInstance().loadAniGroupHandler(str2);
+			}
+			
+			public function clearModel():void
+			{
+				if(m_equipsInUse&&curRenderObject)
+				{
+					DressingRoom.Instance.takeOffWeapon(curRenderObject,m_equipsInUse);	
+					m_equipsInUse = null;
+					attachEquipItemParam = null;
+				}
+				if(ModelManager.getInstance().modelRenderObj)
+				{
+					ModelManager.getInstance().modelRenderObj.dispose();
+					ModelManager.getInstance().renderScene.removeChild(ModelManager.getInstance().modelRenderObj);
+					ModelManager.getInstance().modelRenderObj = null;
+					curRenderObject = null;
+				}
+				
+				fsCB6.selectedIndex = -1;
+				fsCB7.selectedIndex = -1;
+				fsCB0.selectedIndex = -1;
+				fsCB1.selectedIndex = -1;
+				fsCB2.selectedIndex = -1;
+				fsCB3.selectedIndex = 0;
+				fsCB4.selectedIndex = 0;
+				fsCB7.dataProvider = null;
+				fsCB1.dataProvider = null;
+				fsCB2.dataProvider = null;
+				fsCB4_changeHandler(null);
+				isBindEffect = false;
+				curEffectData = null;
+				//
+				this.oX.text = "";
+				this.oY.text = "";
+				this.oZ.text = "";
+				
+				this.pX.text = "";
+				this.pY.text = "";
+				this.pZ.text = "";
+				//
+				timeContent.graphics.clear();
+				hideModel.selected = false;
+				//
+				isMove = false;
+				dragBtn.x = 0;
+				isAttachEffect.selected = false;
+			}
+			
+			protected function button2_clickHandler(event:MouseEvent):void
+			{
+				var playName:String = fsCB1.selectedItem.rawAniName;
+				curRenderObject.playAni(playName,false);
+				//
+				playAni(playName);
+				//
+				dragBtn.x = 0;
+				curFrameText.text = "0";
+			}
+			
+			protected function checkbox1_clickHandler(event:MouseEvent):void
+			{
+				if(hideModel.selected)
+				{
+					if(curRenderObject)
+					{
+						curRenderObject.visible = false;
+					}
+				}else
+				{
+					if(curRenderObject)
+					{
+						curRenderObject.visible = true;
+					}
+				}
+			}
+			
+			protected function AttachEffect_clickHandler(curFrame:uint):void
+			{
+				if(isAttachEffect.selected)
+				{
+					mainView.effectTimeline.timerShaft.bindModel(curFrame);
+				}
+			}
+			
+			private function fsCB7_changeHandler(event:IndexChangeEvent):void
+			{
+				var curWeaonName:String = (fsCB6.selectedItem)?fsCB6.selectedItem.name:"";
+				if(curRenderObject&&curWeaonName.length>0)
+				{
+					attachWeapon(curWeaonName,fsCB7.selectedItem.m_name);
+				}
+			}
+			
+			private function fsCB6_changeHandler(event:IndexChangeEvent):void
+			{
+				var curWeaonName:String = (fsCB6.selectedItem)?fsCB6.selectedItem.name:"";
+				if(curRenderObject&&fsCB7.selectedItem&&fsCB7.selectedItem.m_name&&fsCB7.selectedItem.m_name.length>0)
+				{
+					attachWeapon(curWeaonName,fsCB7.selectedItem.m_name);
+				}
+			}
+			
+			private function attachWeapon(weaponName:String,socketName:String):void
+			{
+				if(attachEquipItemParam == null)
+					attachEquipItemParam = new EquipItemParam();
+				attachEquipItemParam.equipName = weaponName;
+				attachEquipItemParam.equipType = "weapon";
+				attachEquipItemParam.parentLinkNames[0] = socketName;
+				
+				if(m_equipsInUse == null){
+					m_equipsInUse = new EquipsInUse();
+				}
+				m_equipsInUse.type = EquipClassType.WEAPON;			
+				m_equipsInUse.orgFigureWeight = 0.7;
+				m_equipsInUse.preType = 0;			
+				
+				DressingRoom.Instance.putOn(curRenderObject, m_equipsInUse, attachEquipItemParam.equipType, attachEquipItemParam.equipName, attachEquipItemParam.parentLinkNames[0]);		
+			}
+			
+			private function isAttachEffectHandler(event:MouseEvent):void
+			{
+				if(!isAttachEffect.selected)
+				{
+					mainView.effectTimeline.timerShaft.reset();
+				}
+			}
+			
+			protected function rotationChange_changeHandler(event:Event):void
+			{
+				if(curRenderObject)
+				{
+					curRenderObject.rotationY = rotationChange.value;
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<s:BorderContainer id="contentId" x="3" y="233" width="676" height="50" backgroundColor="#878789"/>
+	<s:ComboBox id="fsCB0" x="285" y="8" width="152" height="25" change="fsCB0_changeHandler(event)" labelField="name"/>
+	<s:ComboBox id="fsCB2" x="60" y="40" width="147" height="25" change="fsCB2_changeHandler(event)" labelField="m_name"/>
+	<s:Label x="230" y="47" text="骨骼类型"/>
+	<s:Label x="6" y="78" text="武器列表"/>
+	<s:Label x="230" y="78" text="武器挂点"/>
+	<s:ComboBox id="fsCB6" x="60" y="72" width="147" change="fsCB6_changeHandler(event)" labelField="name"/>
+	<s:Label x="5" y="47" text="骨骼列表"/>
+	<s:ComboBox id="fsCB1" x="512" y="10" width="162" height="25" change="fsCB1_changeHandler(event)" labelField="rawAniName"/>
+	<s:ComboBox id="fsCB3" x="284" y="38" width="153" height="25" change="fsCB3_changeHandler(event)"/>
+	<s:Label x="230" y="17" text="模型列表"/>
+	<s:Label x="458" y="17" text="动作列表"/>
+	<s:Button x="439" y="158" width="60" height="30" label="播放" click="clickPlayHandler(event)"/>
+	<s:Button x="519" y="158" width="60" height="30" label="停止" click="stopHandler(event)"/>
+	<s:Label x="10" y="114" text="骨骼位置信息"/>
+	<s:TextInput id="pX" x="25" y="134" width="101" editable="false" mouseEnabled="false"/>
+	<s:TextInput id="pZ" x="283" y="134" width="127" editable="false" mouseEnabled="false"/>
+	<s:TextInput id="oX" x="25" y="167" width="101" editable="false" mouseEnabled="false"/>
+	<s:TextInput id="oZ" x="283" y="167" width="127" editable="false" mouseEnabled="false"/>
+	<s:TextInput id="oY" x="149" y="167" width="111" editable="false" mouseEnabled="false"/>
+	<s:Label x="13" y="174" text="rx"/>
+	<s:Label x="136" y="174" text="ry"/>
+	<s:Label x="270" y="174" text="rz"/>
+	<s:TextInput id="pY" x="149" y="134" width="111" editable="false" mouseEnabled="false"/>
+	<s:Label x="16" y="141" text="x"/>
+	<s:Label x="136" y="141" text="y"/>
+	<s:Label x="270" y="141" text="z"/>
+	<s:Button id="bindSkeletal" x="12" y="199" height="30" label="绑定骨骼"
+			  click="button1_clickHandler(event)"/>
+	<s:Label x="5" y="17" text="模型类型"/>
+	<s:ComboBox id="fsCB4" x="61" y="9" change="fsCB4_changeHandler(event)"/>
+	<s:Button x="594" y="158" width="80" height="30" label="播放一次" click="button2_clickHandler(event)"/>
+	<s:Label x="131" y="213" width="72" text="总播放时间："/>
+	<s:Label id="playTime" x="200" y="215" width="42" text="0"/>
+	<s:CheckBox id="hideModel" x="481" y="210" label="隐藏模型" click="checkbox1_clickHandler(event)"/>
+	<s:Label x="255" y="213" text="当前播放时间："/>
+	<s:Label id="curFrameText" x="337" y="215" width="49" text="0"/>
+	<s:CheckBox id="isAttachEffect" x="382" y="210" label="是否关联特效" click="isAttachEffectHandler(event)"/>
+	<s:ComboBox id="fsCB7" x="285" y="71" width="152" change="fsCB7_changeHandler(event)" labelField="m_name"/>
+	<s:HSlider id="rotationChange" x="458" y="82" width="216"
+			   change="rotationChange_changeHandler(event)" maximum="360" value="0"/>
+	<s:Label x="458" y="62" text="角色方向"/>
+</s:Group>

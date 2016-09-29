@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="utf-8"?>
+<effectview:EffectUnitDataView_Abst xmlns:fx="http://ns.adobe.com/mxml/2009" 
+									xmlns:s="library://ns.adobe.com/flex/spark" 
+									xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:effectview="app.effectview.*"
+		 width="828" height="1200" initialize="effectunitdataview_abst1_initializeHandler(event)">
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+		<s:RadioButtonGroup id="m_moveType" itemClick="changeInfoHandler(event)"/>
+		<s:RadioButtonGroup id="m_emissionType" itemClick="changeInfoHandler(event)"/>
+		<s:RadioButtonGroup id="m_velocityDir" itemClick="changeInfoHandler(event)"/>
+		<s:RadioButtonGroup id="m_faceType" itemClick="changeInfoHandler(event)"/>
+		<s:RadioButtonGroup id="m_accelType" itemClick="changeInfoHandler(event)"/>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import deltax.common.math.MathConsts;
+			import deltax.graphic.effect.data.unit.EffectUnitData;
+			import deltax.graphic.effect.data.unit.ParticleSystemData;
+			import deltax.graphic.effect.data.unit.particle.ParticleParentParam;
+			
+			import app.effectview.data.EffectTypeMode;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			
+			import spark.components.RadioButtonGroup;
+			
+			protected function effectunitdataview_abst1_initializeHandler(event:FlexEvent):void
+			{
+				m_blendMode.dataProvider = new ArrayCollection(EffectTypeMode.BlendModes);
+				m_zTestMode.dataProvider = new ArrayCollection(EffectTypeMode.DepthTestModes);
+			}
+			
+			public function get theInfo():ParticleSystemData{
+				return this._info as ParticleSystemData;
+			}			
+			override public function set info(value:EffectUnitData):void{
+				super.info = value;
+				baseId.info = value;
+				
+				updateData();
+			}
+			private function updateData():void{				
+				this.m_minEmissionInterval.text = theInfo.m_minEmissionInterval.toString();
+				this.m_particleCountPerEmission.text = theInfo.m_particleCountPerEmission.toString();
+				this.m_minSize.text = theInfo.m_minSize.toString();
+				this.m_maxSize.text = theInfo.m_maxSize.toString();
+				this.m_emissionPlan_x.text = theInfo.m_emissionPlan.x.toString();
+				this.m_emissionPlan_y.text = theInfo.m_emissionPlan.y.toString();
+				this.m_emissionPlan_z.text = theInfo.m_emissionPlan.z.toString();	
+				this.m_minVelocity_x.text = theInfo.m_minVelocity.x.toString();
+				this.m_minVelocity_y.text = theInfo.m_minVelocity.y.toString();
+				this.m_minVelocity_z.text = theInfo.m_minVelocity.z.toString();
+				this.m_maxVelocity_x.text = theInfo.m_maxVelocity.x.toString();
+				this.m_maxVelocity_y.text = theInfo.m_maxVelocity.y.toString();
+				this.m_maxVelocity_z.text = theInfo.m_maxVelocity.z.toString();
+				this.m_acceleration_x.text = theInfo.m_acceleration.x.toString();
+				this.m_acceleration_y.text = theInfo.m_acceleration.y.toString();
+				this.m_acceleration_z.text = theInfo.m_acceleration.z.toString();
+				this.m_minAngularVelocity.text = theInfo.m_minAngularVelocity.toString();
+				this.m_maxAngularVelocity.text = theInfo.m_maxAngularVelocity.toString();
+				this.m_minLifeTime.text = theInfo.m_minLifeTime.toString();
+				this.m_maxLifeTime.text = theInfo.m_maxLifeTime.toString();
+				this.m_minRadius.text = theInfo.m_minRadius.toString();
+				this.m_maxRadius.text = theInfo.m_maxRadius.toString();
+				this.m_longShortRadius.text = theInfo.m_longShortRadius.toString();
+				this.m_cornerDivision.text = theInfo.m_cornerDivision.toString();
+				this.m_velocityPercent.text = theInfo.m_velocityPercent.toString();
+				this.m_moveType.selectedValue = theInfo.m_moveType;
+				this.m_emissionType.selectedValue = theInfo.m_emissionType;
+				this.m_velocityDir.selectedValue = theInfo.m_velocityDir;
+				this.m_faceType.selectedValue = theInfo.m_faceType;
+				this.m_widthRatio.text = theInfo.m_widthRatio.toString();
+				this.m_zBias.text = theInfo.m_zBias.toString();
+				this.m_longShortDRadius.text = theInfo.m_longShortDRadius.toString();
+				this.m_blendMode.selectedIndex = theInfo.m_blendMode;
+				this.m_zTestMode.selectedIndex = theInfo.m_zTestMode;
+				this.m_enableLight.selected = theInfo.m_enableLight;
+				this.m_maxEmissionInterval.text = theInfo.m_maxEmissionInterval.toString();
+				this.m_parentParam_1.selected = Boolean(theInfo.m_parentParam & ParticleParentParam.ADD_PARENT_COLOR);
+				this.m_parentParam_2.selected = Boolean(theInfo.m_parentParam & ParticleParentParam.MUL_PARENT_COLOR);
+				this.m_parentParam_4.selected = Boolean(theInfo.m_parentParam & ParticleParentParam.USE_SCALE_AND_EMITTION_INTERPOLATE);
+				
+				this.m_accelType.selectedValue = theInfo.m_accelType;
+				this.m_startAngle.text = ""+(theInfo.m_startAngle*MathConsts.RADIANS_TO_DEGREES);
+			}
+			
+			private function changeInfoHandler(event:Event):void{
+				theInfo.m_minEmissionInterval = int(this.m_minEmissionInterval.text);
+				theInfo.m_particleCountPerEmission = int(this.m_particleCountPerEmission.text);
+				theInfo.m_minSize = Number(this.m_minSize.text);
+				theInfo.m_maxSize = Number(this.m_maxSize.text);
+				theInfo.m_emissionPlan = new Vector3D(Number(this.m_emissionPlan_x.text),Number(this.m_emissionPlan_y.text),Number(this.m_emissionPlan_z.text));
+				theInfo.m_minVelocity = new Vector3D(Number(this.m_minVelocity_x.text),Number(this.m_minVelocity_y.text),Number(this.m_minVelocity_z.text));
+				theInfo.m_maxVelocity = new Vector3D(Number(this.m_maxVelocity_x.text),Number(this.m_maxVelocity_y.text),Number(this.m_maxVelocity_z.text));
+				theInfo.m_acceleration = new Vector3D(Number(this.m_acceleration_x.text),Number(this.m_acceleration_y.text),Number(this.m_acceleration_z.text));				
+				theInfo.m_minAngularVelocity = Number(this.m_minAngularVelocity.text);
+				theInfo.m_maxAngularVelocity = Number(this.m_maxAngularVelocity.text);
+				theInfo.m_minLifeTime = Number(this.m_minLifeTime.text);
+				theInfo.m_maxLifeTime = Number(this.m_maxLifeTime.text);
+				theInfo.m_minRadius = Number(this.m_minRadius.text);
+				theInfo.m_maxRadius = Number(this.m_maxRadius.text);
+				theInfo.m_longShortRadius = Number(this.m_longShortRadius.text);
+				theInfo.m_cornerDivision = Number(this.m_cornerDivision.text);
+				theInfo.m_velocityPercent = Number(this.m_velocityPercent.text);
+				theInfo.m_moveType = uint(this.m_moveType.selectedValue);
+				theInfo.m_emissionType = uint(this.m_emissionType.selectedValue);
+				theInfo.m_velocityDir = uint(this.m_velocityDir.selectedValue);
+				theInfo.m_faceType = uint(this.m_faceType.selectedValue);
+				theInfo.m_widthRatio = Number(this.m_widthRatio.text);
+				theInfo.m_zBias = Number(this.m_zBias);
+				theInfo.m_longShortDRadius = Number(this.m_longShortDRadius.text);
+				theInfo.m_blendMode = this.m_blendMode.selectedIndex;
+				theInfo.m_zTestMode = this.m_zTestMode.selectedIndex;
+				theInfo.m_enableLight = m_enableLight.selected;
+				theInfo.m_maxEmissionInterval = int(this.m_maxEmissionInterval.text);
+				theInfo.m_parentParam = 0;
+				theInfo.m_parentParam |= this.m_parentParam_1.selected?ParticleParentParam.ADD_PARENT_COLOR:0
+				theInfo.m_parentParam |= this.m_parentParam_2.selected?ParticleParentParam.MUL_PARENT_COLOR:0
+				theInfo.m_parentParam |= this.m_parentParam_4.selected?ParticleParentParam.USE_SCALE_AND_EMITTION_INTERPOLATE:0					
+				theInfo.m_accelType = uint(this.m_accelType.selectedValue);
+				theInfo.m_startAngle =Number(m_startAngle.text)*MathConsts.DEGREES_TO_RADIANS;
+			}
+		]]>
+	</fx:Script>
+	<s:Label x="10" y="41" text="发射间隔(min)" toolTip="发射间隔(min 毫秒)"/>		
+	<s:Label x="11" y="14" text="每次发射数" toolTip="粒子每次发射的数量"/>
+	<s:Label x="12" y="99" text="粒子大小(min)" toolTip="scaleKeys的最小值"/>
+	<s:Label x="12" y="123" text="粒子大小(max)" toolTip="scaleKeys的最大值"/>
+	<s:TextInput id="m_minEmissionInterval" x="142" y="37" change="changeInfoHandler(event)"/>
+	<s:TextInput id="m_particleCountPerEmission" x="142" y="9" change="changeInfoHandler(event)"/>
+	<s:TextInput id="m_minSize" x="142" y="92" change="changeInfoHandler(event)"/>
+	<s:TextInput id="m_maxSize" x="142" y="119" change="changeInfoHandler(event)"/>
+	<s:Label x="10" y="72" text="发射间隔(max)" toolTip="发射间隔(max 毫秒)"/>
+	<s:TextInput id="m_maxEmissionInterval" x="142" y="65" change="changeInfoHandler(event)"/>	
+	<s:Label x="12" y="545" text="散发平面"/>
+	<s:TextInput id="m_emissionPlan_x" x="10" y="560" width="98" change="changeInfoHandler(event)"/>
+	<s:TextInput id="m_emissionPlan_y" x="111" y="559" width="58" change="changeInfoHandler(event)"/>
+	<s:TextInput id="m_emissionPlan_z" x="173" y="559" width="95" change="changeInfoHandler(event)"/>
+	<effectview:EffectUnitDataView_Base id="baseId" x="300" y="0">
+	</effectview:EffectUnitDataView_Base>
+	<s:Label x="13" y="149" text="粒子速度(min)" toolTip="粒子速度(min)"/>
+	<s:TextInput id="m_minVelocity_x" x="11" y="164" width="98" change="changeInfoHandler(event)"/>
+	<s:TextInput id="m_minVelocity_y" x="112" y="163" width="57" change="changeInfoHandler(event)"/>
+	<s:TextInput id="m_minVelocity_z" x="175" y="163" width="95" change="changeInfoHandler(event)"/>
+	<s:Label x="12" y="190" text="粒子速度(max)" toolTip="粒子速度(max)"/>
+	<s:TextInput id="m_maxVelocity_x" x="10" y="205" width="98" change="changeInfoHandler(event)"/>
+	<s:TextInput id="m_maxVelocity_y" x="111" y="204" width="58" change="changeInfoHandler(event)"/>
+	<s:TextInput id="m_maxVelocity_z" x="175" y="204" width="95" change="changeInfoHandler(event)"/>
+	<s:Label x="12" y="234" text="加速度" toolTip="加速度"/>
+	<s:TextInput id="m_acceleration_x" x="10" y="249" width="98" change="changeInfoHandler(event)"/>
+	<s:TextInput id="m_acceleration_y" x="111" y="248" width="58" change="changeInfoHandler(event)"/>
+	<s:TextInput id="m_acceleration_z" x="175" y="248" width="95" change="changeInfoHandler(event)"/>
+	<s:Label x="10" y="431" text="自旋角速度(min)" toolTip="负数表示逆时针"/>
+	<s:Label x="10" y="455" text="自旋角速度(min)" toolTip="负数表示逆时针"/>
+	<s:TextInput id="m_minAngularVelocity" x="140" y="424" change="changeInfoHandler(event)"/>
+	<s:TextInput id="m_startAngle" x="140" y="394" change="changeInfoHandler(event)"/>
+	<s:TextInput id="m_maxAngularVelocity" x="140" y="451" change="changeInfoHandler(event)"/>
+	<s:Label x="12" y="285" text="最小生存时间(min)" toolTip="毫秒"/>
+	<s:Label x="12" y="309" text="最大生存时间(max)" toolTip="毫秒"/>
+	<s:TextInput id="m_minLifeTime" x="142" y="278" change="changeInfoHandler(event)"/>
+	<s:TextInput id="m_maxLifeTime" x="142" y="305" change="changeInfoHandler(event)"/>
+	<s:Label x="10" y="342" text="发射范围半径(min)" toolTip="粒子发射范围半径(min)"/>
+	<s:Label x="10" y="366" text="发射范围半径(max)" toolTip="粒子发射范围半径(max)"/>
+	<s:TextInput id="m_minRadius" x="140" y="335" change="changeInfoHandler(event)"/>
+	<s:TextInput id="m_maxRadius" x="140" y="362" change="changeInfoHandler(event)"/>
+	<s:Label x="10" y="891" text="m_longShortRadius"/>
+	<s:Label x="10" y="915" text="m_cornerDivision" toolTip="初始随机角度数量"/>
+	<s:TextInput id="m_longShortRadius" x="140" y="884" change="changeInfoHandler(event)"/>
+	<s:TextInput id="m_cornerDivision" x="140" y="911" change="changeInfoHandler(event)" />
+	<s:Label x="10" y="946" text="m_velocityPercent"/>
+	<s:TextInput id="m_velocityPercent" x="140" y="939" change="changeInfoHandler(event)" editable="true"  />
+	<s:Label x="10" y="481" text="长宽比" toolTip="宽比"/>
+	<s:TextInput id="m_widthRatio" x="140" y="477" change="changeInfoHandler(event)"/>
+	<s:Label x="10" y="1153" text="m_zBias"/>
+	<s:Label x="10" y="669" text="矩形散发长宽比" toolTip="此值矩形散发类型才有效"/>
+	<s:TextInput id="m_zBias" x="140" y="1147" change="changeInfoHandler(event)" editable="false" selectable="false" enabled="false"/>
+	<s:TextInput id="m_longShortDRadius" x="140" y="665" change="changeInfoHandler(event)"/>
+	<s:Label x="10" y="715" text="m_blendMode"/>
+	<s:Label x="10" y="744" text="m_zTestMode"/>
+	<s:CheckBox id="m_enableLight" x="10" y="1097" label="m_enableLight" enabled="false"/>
+	<s:Label x="10" y="1074" text="m_moveType"/>
+	<s:RadioButton x="140" y="1073" label="WORLD" value="0" group="{m_moveType}" enabled="true"/>
+	<s:RadioButton x="219" y="1073" label="LOCAL" value="1" group="{m_moveType}"  enabled="true"/>
+	<s:Label x="10" y="590" text="散发类型"/>	
+	<s:RadioButton x="37" y="608" label="球体" value="0" group="{m_emissionType}"/>
+	<s:RadioButton x="151" y="609" label="环" value="1" group="{m_emissionType}"/>
+	<s:RadioButton x="37" y="636" label="矩形" value="2" group="{m_emissionType}"/>
+	<s:RadioButton x="151" y="635" label="多角度" value="3" group="{m_emissionType}"/>
+	<s:Label x="11" y="498" text="速度方向"/>	
+	<s:RadioButton x="38" y="518" label="随机" value="0" group="{m_velocityDir}"/>
+	<s:RadioButton x="100" y="518" label="中心向外" value="1" group="{m_velocityDir}"/>
+	<s:RadioButton x="198" y="518" label="中心向内" value="2" group="{m_velocityDir}"/>
+	<s:Label x="10" y="778" text="面向"/>	
+	<s:RadioButton x="7" y="798" label="摄像机" value="0" group="{m_faceType}"/>
+	<s:RadioButton x="70" y="798" label="速度方向" value="1" group="{m_faceType}"/>
+	<s:RadioButton x="9" y="858" label="面向速度方向" value="2" group="{m_faceType}"/>
+	<s:RadioButton x="8" y="828" label="平面一直向上" value="3" group="{m_faceType}"/>
+	<s:RadioButton x="86" y="828" label="速度方向一直向上" value="4" group="{m_faceType}"/>
+	<s:RadioButton x="105" y="858" label="EMISPLAN" value="5" group="{m_faceType}"/>
+	<s:RadioButton x="143" y="798" label="速度方向(忽略摄像机)" value="6" group="{m_faceType}"/>
+	<s:Label x="10" y="973" text="m_parentParam"/>
+	<s:Label x="10" y="1125" text="m_accelType"/>
+	<s:RadioButton x="127" y="1122" label="WORLD" value="0" group="{m_accelType}" enabled="true"/>
+	<s:RadioButton x="214" y="1122" label="LOCAL" value="1" group="{m_accelType}" enabled="true"/>
+	<s:ComboBox id="m_blendMode" x="112" y="711" width="170" change="changeInfoHandler(event)"/>
+	<s:ComboBox id="m_zTestMode" x="112" y="739" width="170" change="changeInfoHandler(event)"/>
+	<s:CheckBox x="6" y="995" label="ADD_PARENT_COLOR" id="m_parentParam_1" change="changeInfoHandler(event)" enabled="true"/>
+	<s:CheckBox x="7" y="1015" label="MUL_PARENT_COLOR" id="m_parentParam_2" change="changeInfoHandler(event)" enabled="true"/>
+	<s:CheckBox x="5" y="1035" label="USE_SCALE_AND_EMITTION_INTERPOLATE" id="m_parentParam_4" change="changeInfoHandler(event)" enabled="true"/>
+	<s:Label x="11" y="399" text="初始角度max" toolTip="负数表示逆时针"/>
+	<mx:VRule x="299" y="0" height="100%" strokeColor="0" strokeWidth="2"/>
+</effectview:EffectUnitDataView_Abst>

@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx" backgroundAlpha="0"
+					   backgroundColor="#b1b1b1" mouseEnabled="false" xmlns:view="app.view.*" addedToStage="addToStageEvent(event)" 
+					   creationComplete="init()" xmlns:effectview="app.effectview.*" showStatusBar="false" minWidth="800" minHeight="600">
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import app.Game;
+			import app.config.AppConfig;
+			import app.constant.MainConstant;
+			import app.manager.ModelManager;
+			import app.update.AppUpdater;
+			
+			import com.hmh.utils.FileHelper;
+			
+			import deltax.common.Util;
+			import deltax.common.resource.Enviroment;
+			import deltax.gui.component.event.DXWndMouseEvent;
+			
+			import mx.core.UIComponent;
+			import mx.events.ResizeEvent;
+			import mx.managers.LayoutManager;
+			
+			private var delayId:uint;
+			private var nudeIdTIs:Array;
+			private var game:Game;
+			private var updater:AppUpdater;
+			private var appConfig:AppConfig;
+			public var defaultDirectoryXML:XML = 
+				<directory_config  Language='CN' LanguageDir='language' readInPackage='1' >	
+					<!--路径都是相对于swf所在目录-->
+					<!-- 资源根目录，也就是程序启动完成后的工作路径 -->
+					<RootPath>$1/</RootPath>
+					<ResourcePath>$1/assets/data/</ResourcePath>
+					<!--策划配置目录（打包或非打包）-->
+					<DesignerPath>$1/assets/config/</DesignerPath>
+				</directory_config>;
+			
+			private function addToStageEvent(event:Event):void
+			{
+				stage.addEventListener(TextEvent.TEXT_INPUT, this.processEvent);
+				stage.addEventListener(DXWndMouseEvent.DOUBLE_CLICK, this.processEvent);
+				stage.addEventListener(DXWndMouseEvent.MOUSE_DOWN, this.processEvent);
+				stage.addEventListener(DXWndMouseEvent.MOUSE_UP, this.processEvent);
+				stage.addEventListener(DXWndMouseEvent.MIDDLE_MOUSE_DOWN, this.processEvent);
+				stage.addEventListener(DXWndMouseEvent.MIDDLE_MOUSE_UP, this.processEvent);
+				stage.addEventListener(DXWndMouseEvent.RIGHT_MOUSE_DOWN, this.processEvent);
+				stage.addEventListener(DXWndMouseEvent.RIGHT_MOUSE_UP, this.processEvent);				
+				//stage.addEventListener(DXWndMouseEvent.MOUSE_MOVE, this.processEvent);
+				stage.addEventListener(DXWndMouseEvent.MOUSE_WHEEL, this.processEvent);
+				stage.addEventListener(KeyboardEvent.KEY_DOWN, this.processEvent);
+				stage.addEventListener(KeyboardEvent.KEY_UP, this.processEvent);
+				stage.addEventListener(Event.SELECT_ALL, this.processEvent);
+				stage.addEventListener(Event.COPY, this.processEvent);
+				stage.addEventListener(Event.PASTE, this.processEvent);
+				stage.addEventListener(Event.CUT, this.processEvent);
+//				stage.addEventListener(Event.RESIZE,onResizeHandler);
+			}
+			
+			private function init():void
+			{
+				this.maximize();
+				MainConstant.mainView = this;
+				delayId = setTimeout(delayShowFile,300)
+			}
+			
+			private function delayShowFile():void
+			{
+				clearTimeout(delayId);
+				//检查更新应用程序
+				appConfig = new AppConfig();	
+				appConfig.loadConfig("app:/AppConfig.xml");
+				updater = new AppUpdater(this, appConfig);
+				updater.checkUpdate();	
+				//
+				var file:File;
+				if(!FileHelper.isFileExist("app:/etc/directory.xml"))
+				{
+					file = new File();
+					file.addEventListener(Event.SELECT,selectDefaultDirectoryHandler);
+					file.browseForDirectory("选择工作目录");
+				}else
+				{
+					var xml:XML = FileHelper.readFileToXML("app:/etc/directory.xml");
+					if(xml)
+					{
+						Enviroment.RootPath = Util.makeGammaString(xml.RootPath);
+						Enviroment.ResourceRootPath = Util.makeGammaString(xml.ResourcePath);
+						Enviroment.ConfigRootPath = Util.makeGammaString(xml.DesignerPath);
+					}
+					startGame();
+				}
+			}
+			
+			protected function selectDefaultDirectoryHandler(event:Event):void
+			{
+				var tempXmlStr:String = defaultDirectoryXML.toString().replace(/\$1/g,String(event.currentTarget.nativePath).replace(/\\/g,"/"));
+				var file:File = new File(File.applicationDirectory.nativePath + "/etc/directory.xml");
+				
+				FileHelper.saveXMLToFile(new XML(tempXmlStr),file);
+				
+				var xml:XML = new XML(tempXmlStr);
+				Enviroment.RootPath = Util.makeGammaString(xml.RootPath);
+				Enviroment.ResourceRootPath = Util.makeGammaString(xml.ResourcePath);
+				Enviroment.ConfigRootPath = Util.makeGammaString(xml.DesignerPath);
+				//
+				startGame();
+			}
+			
+			private function startGame():void
+			{
+//				var ui:UIComponent = new UIComponent();
+//				ui.mouseEnabled = false;
+				game = new Game(viewContainer);
+//				ui.addChild(game);
+//				game.rootUIComponent = viewContainer;
+//				viewContainer.addElement(ui);
+				//
+				MainConstant.gameView = game;
+				//
+				effectMainView.updateFileTree();
+				modelTimeLine.updateFileTree();
+				//
+				ModelManager.getInstance().importCoordAms();
+			}
+			
+			private function processEvent(e:Event):void
+			{
+				if(e.type.indexOf("mouse")!=-1)
+				{
+					var re:Rectangle = viewContainer.getRect(stage);
+					if(!re.contains(stage.mouseX,stage.mouseY))
+					{
+						e.stopImmediatePropagation();
+					}
+				}
+			}
+			
+//			protected function viewContainer_resizeHandler(event:ResizeEvent):void
+//			{
+//				if(game)
+//				{
+//					game.view.width = viewContainer.width;
+//					game.view.height = viewContainer.height;
+//				}
+//				
+//			}
+			
+		]]>
+	</fx:Script>
+	<mx:DividedBox width="100%" height="100%" direction="vertical" verticalGap="3">
+		<mx:HDividedBox id="h1" width="100%" height="100%" horizontalGap="3" minHeight="300">
+			<s:BorderContainer id="viewContainer" x="0" y="0" width="45%" height="100%" minWidth="300" minHeight="300"
+							   borderVisible="true"/>
+			
+			<s:BorderContainer width="55%" height="100%" borderVisible="true" backgroundAlpha="0">
+				<effectview:EffectMainView id="effectMainView" width="100%" height="100%" effectTimelineView="{effectTimeline}"/>	
+			</s:BorderContainer>
+		</mx:HDividedBox>
+		
+		<mx:HDividedBox id="h2" width="100%" height="300" horizontalGap="3">
+			<s:BorderContainer width="64%" height="100%" borderVisible="true" backgroundAlpha="0">
+				<effectview:EffectTimelineView id="effectTimeline" width="100%" height="100%" effectMainView="{effectMainView}"/>	
+			</s:BorderContainer>
+			
+			<s:BorderContainer width="36%" height="100%" borderVisible="true" backgroundAlpha="0" minWidth="690">
+				<effectview:ModelTimelineView id="modelTimeLine" width="100%" height="100%" mainView="{this}"/>	
+			</s:BorderContainer>
+		</mx:HDividedBox>
+	</mx:DividedBox>
+	<!--<s:BorderContainer id="viewContainer" x="0" y="0" width="45%" height="65%" mouseEnabled="false" mouseChildren="false" backgroundAlpha="0">
+	</s:BorderContainer>
+	<effectview:EffectMainView id="effectMainView" x="{viewContainer.x+viewContainer.width}" y="0" width="100%" height="65%" effectTimelineView="{effectTimeline}">
+	</effectview:EffectMainView>
+	<mx:HRule x="0" y="{viewContainer.y+viewContainer.height-5}" width="100%" height="8" strokeColor="0" strokeWidth="2"/>
+	<mx:HRule x="0" y="{viewContainer.y+viewContainer.height+5}" width="100%" height="8" strokeColor="0" strokeWidth="2"/>
+	<effectview:EffectTimelineView id="effectTimeline" x="0" y="{viewContainer.y+viewContainer.height+15}" width="64%" height="100%" effectMainView="{effectMainView}">
+	</effectview:EffectTimelineView>
+	<mx:VRule x="{effectTimeline.x+effectTimeline.width}" y="{viewContainer.y+viewContainer.height+10}" width="8" height="100%" strokeColor="0" strokeWidth="2"/>
+	<effectview:ModelTimelineView id="modelTimeLine" x="{effectTimeline.x+effectTimeline.width+5}" y="{effectTimeline.y}" width="100%" height="100%" mainView="{this}"/>-->
+</s:WindowedApplication>

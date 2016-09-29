@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" width="400" height="180" close="titlewindow1_closeHandler(event)">
+	
+	<fx:Script>
+		<![CDATA[
+			import deltax.common.resource.Enviroment;
+			
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			public var callBack:Function;
+			private var files:Array;
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				var file:File = new File(Enviroment.ResourceRootPath + "fx/tex");
+				file.addEventListener(FileListEvent.SELECT_MULTIPLE,selecthanlder);
+				file.browseForOpenMultiple("为资源添加图片(插入)",[new FileFilter("图片","*.jpg;*.png;*.JPG;*.PNG")]);
+			}
+			
+			protected function selecthanlder(event:FileListEvent):void
+			{
+				event.currentTarget.removeEventListener(Event.SELECT,selecthanlder);
+				files = event.files.sortOn("name");
+				var str:String = "";
+				for each(var file:File in files)
+				{
+					str += file.name + "\n";
+				}
+				textArea.text = str;
+			}
+			
+			protected function button2_clickHandler(event:MouseEvent):void
+			{
+				callBack(files,uint(loopCnt.text));
+				
+				PopUpManager.removePopUp(this);
+			}
+			
+			protected function titlewindow1_closeHandler(event:CloseEvent):void
+			{
+				PopUpManager.removePopUp(this);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<s:Button x="1" y="41" label="插入图片(多张)" click="button1_clickHandler(event)"/>
+	<s:TextInput id="loopCnt" x="107" y="11" text="1"/>
+	<s:Button x="164" y="120" label="确认" click="button2_clickHandler(event)"/>
+	<s:Label x="34" y="16" text="循环次数"/>
+	<s:TextArea id="textArea" x="107" y="41" width="280" height="71"/>
+</s:TitleWindow>

@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   initialize="titlewindow1_initializeHandler(event)" xmlns:effectview="app.effectview.*">
+	<fx:Script>
+		<![CDATA[
+			
+			import deltax.graphic.effect.EffectUnitType;
+			import deltax.graphic.effect.data.EffectData;
+			import deltax.graphic.effect.data.unit.EffectUnitData;
+			
+			import mx.events.FlexEvent;
+			
+			import spark.components.Group;
+			
+			private var m_unitViewClasses:Vector.<Class>;
+			private var m_unitViewInstances:Vector.<EffectUnitDataView_Abst>;
+			public var effectData:EffectData;
+			private var group:EffectUnitDataView_Abst;
+			
+			public var effectMainView:EffectMainView;
+			
+			public function set info(effectUnitData:EffectUnitData):void
+			{	
+				contentId.removeAllElements();
+				if(effectUnitData == null){
+					return;
+				}
+				
+				if(m_unitViewInstances[effectUnitData.type] == null){
+					group = new m_unitViewClasses[effectUnitData.type]();
+					m_unitViewInstances[effectUnitData.type] = group;
+				}else{
+					group = m_unitViewInstances[effectUnitData.type];
+				}
+				contentId.addElement(group);
+				group.info = effectUnitData;
+			}
+			public function get info():EffectUnitData{
+				return group?group.info:null;
+			}
+			
+			protected function titlewindow1_initializeHandler(event:FlexEvent):void
+			{
+				m_unitViewInstances = new Vector.<EffectUnitDataView_Abst>(EffectUnitType.COUNT, true);
+				
+				m_unitViewClasses = new Vector.<Class>(EffectUnitType.COUNT, true);
+				m_unitViewClasses[EffectUnitType.PARTICLE_SYSTEM] = EffectUnitDataView_ParticleSystem;
+				m_unitViewClasses[EffectUnitType.BILLBOARD] = EffectUnitDataView_Billboard;
+				m_unitViewClasses[EffectUnitType.POLYGON_TRAIL] = EffectUnitDataView_PolygonTrail;
+				m_unitViewClasses[EffectUnitType.CAMERA_SHAKE] = EffectUnitDataView_CameraShake;
+				m_unitViewClasses[EffectUnitType.SCREEN_FILTER] = EffectUnitDataView_ScreenFilter;
+				m_unitViewClasses[EffectUnitType.MODEL_CONSOLE] = EffectUnitDataView_ModelConsole;
+				m_unitViewClasses[EffectUnitType.DYNAMIC_LIGHT] = EffectUnitDataView_DynamicLight;
+				m_unitViewClasses[EffectUnitType.NULL] = EffectUnitDataView_NullEffect;
+				m_unitViewClasses[EffectUnitType.SOUND] = EffectUnitDataView_SoundFX;
+				m_unitViewClasses[EffectUnitType.MODEL_MATERIAL] = EffectUnitDataView_ModelMaterial;
+				m_unitViewClasses[EffectUnitType.POLYGON_CHAIN] = EffectUnitDataView_PolygonChain;
+				m_unitViewClasses[EffectUnitType.MODEL_ANIMATION] = EffectUnitDataView_ModelAnimation;				
+				
+			}
+			
+			public function get groupView():EffectUnitDataView_Abst
+			{
+				return group;
+			}
+			
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>	
+	<s:Scroller id="scrollerId" x="0" y="0" width="100%" height="100%" horizontalScrollPolicy="off" >
+		<s:VGroup id="contentId" width="100%" height="100%">
+		</s:VGroup>
+	</s:Scroller>
+</s:Group>

@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="utf-8"?>
+<effectview:EffectUnitDataView_Abst xmlns:fx="http://ns.adobe.com/mxml/2009" 
+									xmlns:s="library://ns.adobe.com/flex/spark" 
+									xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:effectview="app.effectview.*"
+		 width="828" height="684" initialize="effectunitdataview_abst1_initializeHandler(event)" creationComplete="effectunitdataview_abst1_creationCompleteHandler(event)">
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import deltax.common.math.MathUtl;
+			import deltax.graphic.effect.data.unit.BillboardData;
+			import deltax.graphic.effect.data.unit.EffectUnitData;
+			
+			import app.effectview.data.EffectTypeMode;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			
+			import spark.events.TextOperationEvent;
+			
+			override public function set info(value:EffectUnitData):void
+			{
+				super.info = value;
+				baseId.info = value;
+				
+				updateData();
+			}
+			
+			public function get theInfo():BillboardData
+			{
+				return _info as BillboardData
+			}
+			
+			private function updateData():void
+			{
+				this.m_startAngle.textDisplay.text = (theInfo.m_startAngle * 180/Math.PI).toString();
+				this.m_widthRatio.text = theInfo.m_widthRatio.toString();
+				this.m_zBias.text = theInfo.m_zBias.toString();
+				
+				var tmp0:Vector3D = theInfo.m_rotateAxis.clone();
+				tmp0.normalize();
+				this.m_rotateAxis_x.text = tmp0.x.toFixed(2);
+				this.m_rotateAxis_y.text = tmp0.y.toFixed(2);
+				this.m_rotateAxis_z.text = tmp0.z.toFixed(2);
+				
+//				trace(theInfo.m_rotateAxis);
+
+//				trace(theInfo.m_rotateAxis);
+//				this.m_rotateAxisId.text = tmp0.x.toFixed(2)+" "+tmp0.y.toFixed(2)+" "+tmp0.z.toFixed(2);
+//				trace(theInfo.m_rotateAxis);
+				this.angleVId.text = theInfo.m_rotateAxis.length.toString();
+//				trace(theInfo.m_rotateAxis);
+//				var tmp0:Vector3D;
+				tmp0 = theInfo.m_normal;
+				tmp0.normalize();
+				//m_normalId.text = getAngle(Math.acos(tmp0.x)).toFixed(2)+" "+getAngle(Math.acos(tmp0.y)).toFixed(2)+" "+getAngle(Math.acos(tmp0.z)).toFixed(2);
+//				m_normalId.text = tmp0.x.toFixed(2)+" "+tmp0.y.toFixed(2)+" "+tmp0.z.toFixed(2);
+//				tmp0 = theInfo.m_normal;
+				this.m_normal_x.text = tmp0.x.toFixed(2);
+				this.m_normal_y.text = tmp0.y.toFixed(2);
+				this.m_normal_z.text = tmp0.z.toFixed(2);
+				
+				this.m_minSize.text = theInfo.m_minSize.toString();
+				this.m_maxSize.text = theInfo.m_maxSize.toString();
+				this.m_faceType.selectedIndex = theInfo.m_faceType;
+				this.m_blendMode.selectedIndex = theInfo.m_blendMode;
+				
+				this.m_zTestMode.selectedIndex = theInfo.m_zTestMode;
+				this.m_enableLight.selected = theInfo.m_enableLight;
+				this.m_synRotate.selected = theInfo.m_synRotate;
+				this.m_bindOnlyStart.selected = theInfo.m_bindOnlyStart;
+				
+//				var tt:Number = theInfo.m_normal.x * theInfo.m_normal.x + theInfo.m_normal.y * theInfo.m_normal.y + theInfo.m_normal.z*theInfo.m_normal.z
+			}
+			
+			/**
+			 * @value 弧度
+			 * @return 角度
+			 */
+			public static  function getAngle(value:Number):Number
+			{
+				return Number(value*180/Math.PI);
+			}
+			
+			private function changeInfoHandler(event:Event):void
+			{
+				theInfo.m_startAngle = Number(this.m_startAngle.textDisplay.text) * Math.PI/180;
+				theInfo.m_startAngle = MathUtl.limit(theInfo.m_startAngle, 0, (Math.PI * 2));
+				theInfo.m_widthRatio = Number(this.m_widthRatio.text);
+				theInfo.m_zBias = Number(this.m_zBias.text);
+//				//旋转轴
+//				var axis:Array = m_rotateAxisId.text.split(" ");
+//				var rotateAxis:Vector3D = new Vector3D(Number(axis[0]),Number(axis[1]),Number(axis[2]));
+//				rotateAxis.normalize();
+//				m_rotateAxisId.text = rotateAxis.x.toFixed(2)+" "+rotateAxis.y.toFixed(2)+" "+rotateAxis.z.toFixed(2);
+//				rotateAxis.scaleBy(Number(angleVId.text));
+//				//trace(rotateAxis);
+//				theInfo.m_rotateAxis = rotateAxis;
+//				//trace(theInfo.m_rotateAxis);
+//				theInfo.m_angularVelocity = theInfo.m_rotateAxis.length;
+//				//朝向
+//				var normals:Array = m_normalId.text.split(" ");
+//				normals = normals.length>0?normals:[0,0,0];
+//				//trace(normals);
+//				var normalAngles:Vector3D = new Vector3D(Number(normals[0]),Number(normals[1]),Number(normals[2]));
+//				normalAngles.normalize();
+//				if(!normalAngles.equals(theInfo.m_normal)){
+//					theInfo.m_normal = normalAngles;//new Vector3D(Math.cos(normalAngles.x),Math.cos(normalAngles.y),Math.cos(normalAngles.z));
+//					m_normalId.text = normalAngles.x.toFixed(2)+" "+normalAngles.y.toFixed(2)+" "+normalAngles.z.toFixed(2);
+//					
+//					this.m_normal_x.textDisplay.text = theInfo.m_normal.x.toString();
+//					this.m_normal_y.textDisplay.text = theInfo.m_normal.y.toString();
+//					this.m_normal_z.textDisplay.text = theInfo.m_normal.z.toString();
+//				}
+				theInfo.m_minSize = Number(this.m_minSize.text);
+				theInfo.m_maxSize = Number(this.m_maxSize.text);
+				var faceTypeTemp:int = theInfo.m_faceType;
+				//if(this.m_faceType.selectedIndex>3){
+					//Alert.show("暂只能选择前三种类型");
+				//}else{
+					theInfo.m_faceType = this.m_faceType.selectedIndex;
+				//}
+				theInfo.m_blendMode = this.m_blendMode.selectedIndex;
+				theInfo.m_zTestMode = this.m_zTestMode.selectedIndex;
+				theInfo.m_enableLight = m_enableLight.selected;
+				theInfo.m_synRotate = m_synRotate.selected;
+				theInfo.m_bindOnlyStart = m_bindOnlyStart.selected;
+			}
+			
+			protected function effectunitdataview_abst1_initializeHandler(event:FlexEvent):void
+			{
+				// TODO Auto-generated method stub
+				m_faceType.dataProvider = new ArrayCollection(EffectTypeMode.FaceTypes);
+				m_blendMode.dataProvider = new ArrayCollection(EffectTypeMode.BlendModes);
+				m_zTestMode.dataProvider = new ArrayCollection(EffectTypeMode.DepthTestModes);
+			}
+			
+			protected function effectunitdataview_abst1_creationCompleteHandler(event:FlexEvent):void
+			{
+				updateData();
+			}
+					
+			
+//			protected function inputkeyDownHandler(event:KeyboardEvent):void
+//			{
+//				if(event.keyCode==Keyboard.ENTER)
+//				{
+//					switch(event.currentTarget)
+//					{
+//						case m_rotateAxis_x:
+//							break;
+//						case m_rotateAxis_y:
+//							break;
+//						case m_rotateAxis_z:
+//							break;
+//						case m_rotateAxis_x:
+//							break;
+//						case m_rotateAxis_x:
+//							break;
+//						case m_rotateAxis_x:
+//							break;
+//					}
+//					if(event.currentTarget==m_normalId)
+//					{
+//						m_normalChangeHandler(null);
+//					}else if(event.currentTarget==m_rotateAxisId)
+//					{
+//						m_rotateAxisChangeHandler(null);
+//					}else
+//					{						
+//						changeInfoHandler(null);
+//					}
+//					
+//				}
+//			}
+			
+			protected function m_normalChangeHandler(event:TextOperationEvent):void
+			{
+				//朝向
+//				var normals:Array = m_normalId.text.split(" ");
+//				normals = normals.length>0?normals:[0,0,0];
+				//trace(normals);
+				var normalAngles:Vector3D = new Vector3D(Number(m_normal_x.text),Number(m_normal_y.text),Number(m_normal_z.text));
+				normalAngles.normalize();
+//				var flag:Boolean=false;		
+				if(!normalAngles.equals(theInfo.m_normal))
+				{
+					theInfo.m_normal = normalAngles;//new Vector3D(Math.cos(normalAngles.x),Math.cos(normalAngles.y),Math.cos(normalAngles.z));					
+//					var tmp:String = normalAngles.x.toFixed(2)+" "+normalAngles.y.toFixed(2)+" "+normalAngles.z.toFixed(2);
+//					if(tmp!=m_normalId.text){
+//						m_normalId.text = tmp;
+//						flag = true;
+//					}
+//					
+//					this.m_normal_x.textDisplay.text = theInfo.m_normal.x.toString();
+//					this.m_normal_y.textDisplay.text = theInfo.m_normal.y.toString();
+//					this.m_normal_z.textDisplay.text = theInfo.m_normal.z.toString();
+				}
+				
+//				if(theInfo.m_normal && flag){					
+//					theInfo.m_normal.x = Number(m_normal_x.text);
+//					theInfo.m_normal.y = Number(m_normal_y.text);
+//					theInfo.m_normal.z = Number(m_normal_z.text);
+//				}
+			}
+			
+			protected function m_rotateAxisChangeHandler(event:TextOperationEvent):void
+			{			
+				//旋转轴
+//				var axis:Array = m_rotateAxisId.text.split(" ");
+				var rotateAxis:Vector3D = new Vector3D(Number(m_rotateAxis_x.text),Number(m_rotateAxis_y.text),Number(m_rotateAxis_z.text));				
+//				var flag:Boolean=false;
+				rotateAxis.normalize();
+				if(!rotateAxis.equals(theInfo.m_rotateAxis))
+				{
+					
+//					var tmp:String = rotateAxis.x.toFixed(2)+" "+rotateAxis.y.toFixed(2)+" "+rotateAxis.z.toFixed(2);
+//					if(tmp!=m_rotateAxisId.text){
+//						m_rotateAxisId.text = tmp;
+//						flag = true;									
+//					}
+									
+				}
+				rotateAxis.scaleBy(Number(angleVId.text));								
+				
+				//trace(rotateAxis);
+				theInfo.m_rotateAxis = rotateAxis;
+				//trace(theInfo.m_rotateAxis);
+				theInfo.m_angularVelocity = theInfo.m_rotateAxis.length;
+				
+//				if(theInfo.m_rotateAxis && flag){
+//					theInfo.m_rotateAxis.x = Number(m_rotateAxis_x.text);
+//					theInfo.m_rotateAxis.y = Number(m_rotateAxis_y.text);
+//					theInfo.m_rotateAxis.z = Number(m_rotateAxis_z.text);
+//				}
+			}
+			
+		]]>
+	</fx:Script>
+	<s:Label x="10" y="14" text="初始旋转角度：" toolTip="角度"/>
+	<s:Label x="46" y="42" text="宽高比：" toolTip="长宽比"/>
+	<s:Label x="34" y="342" text="z乖离率："/>
+	<s:Label x="46" y="91" text="旋转轴：" toolTip="自身旋转轴"/>
+	<s:Label x="46" y="66" text="角速度：" toolTip="自身旋转轴"/>
+	<s:TextInput id="m_widthRatio" x="95" y="36" width="165" change="changeInfoHandler(event)"/>
+	<s:TextInput id="m_zBias" x="95" y="335" width="163" change="changeInfoHandler(event)"
+				 enabled="false"/>	
+	<s:Label x="47" y="139" text="法向量：" toolTip=""/>
+	<s:Label x="23" y="194" text="缩放最小值："/>
+	<s:Label x="23" y="222" text="缩放最大值："/>
+	<s:Label x="35" y="249" text="面向类型："/>
+	<s:TextInput id="m_minSize" x="95" y="190" width="165" change="changeInfoHandler(event)"/>
+	<s:TextInput id="m_maxSize" x="95" y="217" width="165" change="changeInfoHandler(event)"/>
+	<s:Label x="35" y="278" text="混合模式："/>
+	<s:Label x="11" y="305" text="深度测试模式："/>
+	<effectview:EffectUnitDataView_Base id="baseId" x="299" y="1">
+	</effectview:EffectUnitDataView_Base>
+	<s:CheckBox id="m_enableLight" x="95" y="372" label="能否接受灯光" change="changeInfoHandler(event)" enabled="false"/>
+	<s:CheckBox id="m_synRotate" x="95" y="392" label="异步旋转" change="changeInfoHandler(event)" enabled="true"/>
+	<s:CheckBox id="m_bindOnlyStart" x="95" y="413" label="只在开始时绑定" change="changeInfoHandler(event)" enabled="true"/>
+	<s:ComboBox id="m_faceType" x="95" y="244" width="164" change="changeInfoHandler(event)"/>
+	<s:ComboBox id="m_blendMode" x="95" y="273" width="164" change="changeInfoHandler(event)"/>
+	<s:ComboBox id="m_zTestMode" x="95" y="302" width="163" change="changeInfoHandler(event)"/>
+	<s:NumericStepper id="m_startAngle" x="95" y="10" width="165" maximum="360" minimum="-1000"
+					  stepSize="1" change="changeInfoHandler(event)"/>
+	<s:TextInput x="95" y="159" width="40" id="m_normal_x" change="m_normalChangeHandler(event)"/>
+	<s:TextInput x="157" y="159" width="40" id="m_normal_y" change="m_normalChangeHandler(event)"/>
+	<s:TextInput x="220" y="158" width="40" id="m_normal_z" change="m_normalChangeHandler(event)"/>
+	<s:TextInput id="angleVId" x="95" y="62" width="165" change="m_rotateAxisChangeHandler(event)"/>
+	<s:TextInput id="m_rotateAxis_x" x="95" y="108" width="40"
+				 change="m_rotateAxisChangeHandler(event)" enabled="true"/>
+	<s:TextInput id="m_rotateAxis_y" x="157" y="108" width="40"
+				 change="m_rotateAxisChangeHandler(event)" enabled="true"/>
+	<s:TextInput id="m_rotateAxis_z" x="220" y="108" width="40"
+				 change="m_rotateAxisChangeHandler(event)" enabled="true"/>
+	<s:Label x="78" y="112" width="17" text="x："/>
+	<s:Label x="140" y="114" width="17" text="y："/>
+	<s:Label x="204" y="114" width="17" text="z："/>
+	<s:Label x="78" y="163" text="x："/>
+	<s:Label x="140" y="165" text="y："/>
+	<s:Label x="204" y="165" text="z："/>
+	<mx:VRule x="299" y="0" height="100%" strokeColor="0" strokeWidth="2"/>
+</effectview:EffectUnitDataView_Abst>

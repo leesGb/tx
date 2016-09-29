@@ -1,0 +1,485 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="400" height="300" creationComplete="group1_creationCompleteHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import deltax.graphic.effect.data.unit.EffectUnitData;
+			
+			import mx.controls.Alert;
+			import mx.core.UIComponent;
+			import mx.events.FlexEvent;
+			
+			public static const OFFSETKEY:String="offsetKey";
+			public static const COLORKEY:String="colorKey";
+			public static const SCALEKEY:String="scaleKey";
+			public static const TEXTUREKEY:String="textureKey";
+			
+			public var frameType:String;
+			private var _info:*;
+			private var _selectIndex:int=-1;		
+			private var selectItem:Sprite;
+			//private var myBmd:BitmapData;			
+
+			public var clickItemHandler:Function;
+			public var updateDataComplete:Function;
+			public var updateDataBegin:Function;
+			public var addNewItemKeyHandler:Function;
+			private var _nodeList:Vector.<Sprite> = new Vector.<Sprite>();
+			private var keyMcYPos:Array =[];
+			private var infoKeyList:*;
+			
+			private var m_selectItemIndexs:Vector.<int>=new Vector.<int>();				
+			private var selectItems:Vector.<Sprite>=new Vector.<Sprite>();
+			
+			protected function group1_creationCompleteHandler(event:FlexEvent):void
+			{					
+				addEventListener(MouseEvent.MOUSE_DOWN,mDown);						
+			}
+
+			//列表数据
+			public function get info():EffectUnitData
+			{
+				return _info;
+			}
+
+			public function set info(value:EffectUnitData):void
+			{
+				_info = value;				
+				updateData();
+			}	
+			
+			private function updateYPos():void{
+				keyMcYPos = [];
+				var temp:Number;
+				switch(frameType)
+				{
+					case OFFSETKEY:						
+						for each(temp in info.m_offsetKeys){
+							keyMcYPos.push(0.5);
+						}
+						infoKeyList = info.m_offsetKeys;
+						break;
+					case COLORKEY:						
+						for each(temp in info.colors){
+							var tmp:uint = temp>>24 & 0xFF;							
+							keyMcYPos.push((1 - tmp/255));
+						}
+						infoKeyList = info.m_colorKeys;
+						break;
+					case SCALEKEY:
+						for each(temp in info.scales){
+							keyMcYPos.push((1 - temp/255));
+						}
+						infoKeyList = info.m_scaleKeys;
+						break;
+					case TEXTUREKEY:
+						for each(temp in info.m_textureKeys){
+							keyMcYPos.push(0.5);
+						}
+						infoKeyList = info.m_textureKeys;
+						break;
+				}
+				
+			}
+			
+			public var drawLayer:Sprite;
+			private function updateData():void
+			{				
+				updateYPos();
+				removeAllElements();
+				//selectIndex = -1;
+								
+				drawLayer = new Sprite();
+				var sprite:Sprite = drawLayer;
+				sprite.graphics.clear();
+				sprite.graphics.lineStyle(1,0x000000);
+				sprite.graphics.beginFill(0xFFFFFF);
+				sprite.graphics.drawRect(0,0,width,height);
+				sprite.graphics.endFill();
+				
+				if(updateDataBegin!=null){
+					updateDataBegin();
+				}
+				
+				var keyMc:Sprite;
+				var i:int = 0;
+				sprite.graphics.lineStyle(1,0x000000);
+				sprite.graphics.moveTo(0,0);
+				_nodeList.splice(0,nodeList.length);				
+				for each(var keyTemp:Number in infoKeyList){
+					keyMc = new Sprite();
+					keyMc.name = frameType+"_" + i;
+					keyMc.buttonMode = true;
+					keyMc.graphics.lineStyle(1,0x000000);
+					keyMc.graphics.beginFill(0xCCCCCC,1);
+					keyMc.graphics.drawRect(-4,-4,8,8);
+					keyMc.graphics.endFill();
+					keyMc.x = width * keyTemp;
+					keyMc.y = height * keyMcYPos[i];
+					sprite.addChild(keyMc);
+					_nodeList.push(keyMc);
+					sprite.graphics.lineTo(keyMc.x,keyMc.y);
+					keyMc.addEventListener(MouseEvent.CLICK,__selectInputText);
+					keyMc.addEventListener(MouseEvent.MOUSE_DOWN,keyMcDownHandler);
+					keyMc.addEventListener(MouseEvent.MOUSE_UP,keyMcUpHandler);
+					//keyMc.addEventListener(MouseEvent.MOUSE_OUT,keyMcUpHandler);
+					keyMc.addEventListener(MouseEvent.MOUSE_MOVE,keyMcMoveHandler);					
+					i++;
+				}
+				sprite.graphics.endFill();
+				sprite.doubleClickEnabled = true;				
+				sprite.addEventListener(MouseEvent.DOUBLE_CLICK,__addNewItemKeyHandler);				
+				
+				var ui:UIComponent = new UIComponent();
+				ui.addChild(sprite);
+				addElement(ui);
+				
+				selectIndex = _selectIndex;
+				if(updateDataComplete!=null){
+					updateDataComplete();
+				}
+			}
+
+			public function get selectIndex():int
+			{
+				return _selectIndex;
+			}
+
+			public function set selectIndex(value:int):void
+			{
+				_selectIndex = value;
+				updateSelect();
+				if(stage){
+					stage.focus = this;
+					addEventListener(KeyboardEvent.KEY_UP,keyUpAction);
+				}
+			}
+
+			
+			private function updateSelect():void
+			{
+				
+			}
+			
+			public function get nodeList():Vector.<Sprite>
+			{
+				return _nodeList;
+			}
+			
+			//start>=1,end>=1
+			public function divideEqual(start:int=0,end:int=int.MAX_VALUE):void{
+				start--;
+				end--;
+				if(end>=_nodeList.length) {return;}
+				if(start<0)return;
+				var awidth:int= (_nodeList[end].x-_nodeList[start].x);
+				var del:Number = awidth/(end-start);
+				
+				var step:int=1;
+				for(start=start+1;start<end;start++,step++){
+					var sp:Sprite = _nodeList[start];
+					sp.x = del*step;
+					itemMcChanged(sp);
+				}
+				updateData();
+			}
+
+			
+			protected function __selectInputText(event:MouseEvent):void
+			{
+				selectIndex = int(event.currentTarget.name.split("_")[1]);
+				if(clickItemHandler!=null){
+					clickItemHandler(event);
+				}
+				
+			}					
+			
+			private function keyMcUpHandler(event:MouseEvent):void{				
+				var curKeyMc:Sprite = event.target as Sprite;
+				if(!curKeyMc)return;
+				if(curKeyMc.name.indexOf(frameType)==-1)return;
+				curKeyMc.stopDrag();
+				
+				curKeyMc = event.target as Sprite;
+				if(itemMcChanged(curKeyMc)){					
+					updateData();
+				}
+			}
+			
+			private function itemMcChanged(curKeyMc:Sprite):Boolean{
+				var keyType:String = curKeyMc.name.split("_")[0];
+				var keyIndex:int = curKeyMc.name.split("_")[1];
+				switch(keyType){
+					case "offsetKey":
+						var newOffsetKey:Number = curKeyMc.x/width;
+						if(info.m_offsetKeys[keyIndex] != newOffsetKey){
+							info.m_offsetKeys[keyIndex] = newOffsetKey;
+							return true;
+						}
+						break;
+					case "colorKey":
+						var newColorKey:Number = curKeyMc.x/width;
+						var newAlphaValue:Number = (1 - curKeyMc.y/height);
+						var newColorValue:uint = (info.colors[keyIndex] & 0xFFFFFF) | (((newAlphaValue * 255)<<24) & 0xFF000000);
+						if(info.m_colorKeys[keyIndex] != newColorKey || info.colors[keyIndex] != newColorValue){
+							info.m_colorKeys[keyIndex] = newColorKey;
+							info.colors[keyIndex] =  newColorValue;
+							return true;
+						}
+						break;
+					case "scaleKey":
+						var newScaleKey:Number = curKeyMc.x/width;
+						var newScaleValue:uint = (1 - curKeyMc.y/height)*255;
+						if(info.m_scaleKeys[keyIndex] != newScaleKey || info.scales[keyIndex] != newScaleValue){
+							info.m_scaleKeys[keyIndex] = newScaleKey;
+							info.scales[keyIndex] = newScaleValue;
+							return true;
+						}
+						break;
+					case "textureKey":
+						var newTextureKey:Number = curKeyMc.x/width
+						if(info.m_textureKeys[keyIndex] != newTextureKey){
+							info.m_textureKeys[keyIndex] = newTextureKey;
+							return true;
+						}
+						break;
+				}	
+				return false;
+			}
+			
+			private function keyMcDownHandler(event:MouseEvent):void{				
+				var curKeyMc:Sprite = event.currentTarget as Sprite;
+				var keyType:String = curKeyMc.name.split("_")[0];
+				var keyIndex:int = curKeyMc.name.split("_")[1];
+				var drawRectangle:Rectangle;
+				var minKeytime:Number;
+				var maxKeytime:Number;
+				switch(keyType){
+					case "offsetKey":
+						selectItem = curKeyMc;
+						//if(keyIndex == info.m_offsetKeys.length - 1){
+						//	minKeytime = 1;
+						//}else 
+						if(keyIndex > 0){
+							minKeytime = info.m_offsetKeys[keyIndex - 1];
+						}else{
+							minKeytime = 0;
+						}
+						//if(keyIndex == 0){
+						//	maxKeytime = 0;
+						//}else 
+						if(keyIndex<(info.m_offsetKeys.length - 1)){
+							maxKeytime = info.m_offsetKeys[keyIndex + 1];
+						}else{
+							maxKeytime = 1;
+						}
+						drawRectangle = new Rectangle(width * minKeytime,height/2,width * maxKeytime-width * minKeytime,0);
+						break;
+					case "colorKey":
+						selectItem = curKeyMc;
+						if(keyIndex == info.m_colorKeys.length - 1){
+							minKeytime = 1;
+						}else if(keyIndex > 0){
+							minKeytime = info.m_colorKeys[keyIndex - 1];
+						}else{
+							minKeytime = 0;
+						}
+						if(keyIndex == 0){
+							maxKeytime = 0;
+						}else if(keyIndex<(info.m_colorKeys.length - 1)){
+							maxKeytime = info.m_colorKeys[keyIndex + 1];
+						}else{
+							maxKeytime = 1;
+						}
+						drawRectangle = new Rectangle(width * minKeytime,0,width * maxKeytime-width * minKeytime,height);
+						break;
+					case "scaleKey":
+						selectItem = curKeyMc;
+						if(keyIndex == info.m_scaleKeys.length - 1){
+							minKeytime = 1;
+						}else if(keyIndex > 0){
+							minKeytime = info.m_scaleKeys[keyIndex - 1];
+						}else{
+							minKeytime = 0;
+						}
+						if(keyIndex == 0){
+							maxKeytime = 0;
+						}else if(keyIndex<(info.m_scaleKeys.length - 1)){
+							maxKeytime = info.m_scaleKeys[keyIndex + 1];
+						}else{
+							maxKeytime = 1;
+						}
+						drawRectangle = new Rectangle(width * minKeytime,0,width * maxKeytime - width * minKeytime,height);						
+						break;
+					case "textureKey":
+						selectItem = curKeyMc;
+						//if(keyIndex == info.m_textureKeys.length - 1){
+						//	minKeytime = 1;
+						//}else 
+						if(keyIndex > 0){
+							minKeytime = info.m_textureKeys[keyIndex - 1];
+						}else{
+							minKeytime = 0;
+						}
+						if(keyIndex == 0){
+							maxKeytime = 0;
+						}else if(keyIndex<(info.m_textureKeys.length - 1)){
+							maxKeytime = info.m_textureKeys[keyIndex + 1];
+						}else{
+							maxKeytime = 1;
+						}
+						drawRectangle = new Rectangle(width * minKeytime,height/2,width * maxKeytime - width * minKeytime,0);						
+						break;
+				}
+				curKeyMc.startDrag(false,drawRectangle);
+				
+				for(var i:int = 0;i<curKeyMc.parent.numChildren;i++){
+					var fillcolor:uint;
+					var fillMc:Sprite = curKeyMc.parent.getChildAt(i) as Sprite;
+					if(fillMc == curKeyMc){
+						fillcolor = 0xFFFF00;
+					}else{
+						fillcolor = 0xCCCCCC;					
+					}
+					fillMc.graphics.lineStyle(1,0x000000);
+					fillMc.graphics.beginFill(fillcolor,1);
+					fillMc.graphics.drawRect(-4,-4,8,8);
+					fillMc.graphics.endFill();
+				}
+			}
+			
+			private function keyMcMoveHandler(event:MouseEvent):void
+			{
+				
+			}
+			
+			protected function __addNewItemKeyHandler(event:MouseEvent):void
+			{
+				if(addNewItemKeyHandler!=null){
+					addNewItemKeyHandler(event);
+				}				
+			}			
+			
+			protected function keyUpAction(event:KeyboardEvent):void
+			{
+				if(selectItems.length!=0){
+					for(var i:int=0;i<selectItems.length;i++){
+						keyUpSelect(event,selectItems[i]);
+						itemMcChanged(selectItems[i])
+					}
+					updateData();
+				}else if(selectItem){
+					keyUpSelect(event,selectItem);
+					if(itemMcChanged(selectItem)){					
+						updateData();
+					}
+				}
+								
+				event.stopPropagation();
+			}
+			
+			private function keyUpSelect(event:KeyboardEvent,selectItem:Sprite):void{
+				switch(event.keyCode){
+					case Keyboard.UP:
+						if(frameType!=OFFSETKEY)
+							selectItem.y-=1;
+						break;
+					case Keyboard.DOWN:
+						if(frameType!=OFFSETKEY)
+							selectItem.y+=1;
+						break;
+					case Keyboard.LEFT:
+						selectItem.x-=1;
+						break;
+					case Keyboard.RIGHT:
+						selectItem.x+=1;
+						break;
+				}	
+			}
+			
+			private var spaUI:UIComponent=new UIComponent();
+			private var spa:Sprite=new Sprite();
+			private var spaStartP:Point=new Point();
+			protected function mDown(event:MouseEvent):void
+			{
+				selectItems.length=0;
+				selectItemIndexs.length=0;
+				if(_nodeList.indexOf(event.target)!=-1)return;
+				if(!containsElement(spaUI)){
+					addElement(spaUI);
+					spa.mouseEnabled=false;
+				}
+				drawLayer.mouseChildren=false;
+				spaStartP.setTo(event.localX,event.localY);
+				spa.x = event.localX;
+				spa.y = event.localY;
+				spa.graphics.clear();
+				spaUI.addChild(spa);
+				addEventListener(MouseEvent.MOUSE_MOVE,mMove);				
+				this.parent.addEventListener(MouseEvent.MOUSE_UP,mUp);	
+				
+			}
+			
+			protected function mUp(event:MouseEvent):void
+			{	
+				drawLayer.mouseChildren=true;
+				removeEventListener(MouseEvent.MOUSE_MOVE,mMove);
+				this.parent.removeEventListener(MouseEvent.MOUSE_UP,mUp);
+				spaUI.removeChild(spa);
+				//trace(spa.x,spa.y,spa.width,spa.height);
+				hitTestSelectItem();
+				if(selectItems.length!=0){
+					stage.focus = this;
+					addEventListener(KeyboardEvent.KEY_UP,keyUpAction);
+				}
+			}
+			
+			protected function mMove(event:MouseEvent):void
+			{				
+				spa.x = spaStartP.x<event.localX?spaStartP.x:event.localX;
+				spa.y = spaStartP.y<event.localY?spaStartP.y:event.localY;
+				spa.graphics.clear();
+				spa.graphics.lineStyle(1,0x00ffff);
+				spa.graphics.drawRect(0,0,Math.abs(spaStartP.x-event.localX),Math.abs(spaStartP.y-event.localY));
+				spa.graphics.endFill();
+			}
+			
+			private function hitTestSelectItem():void
+			{
+				selectIndex=-1;
+				selectItems.length=0;
+				selectItemIndexs.length=0;
+				var r:Rectangle = new Rectangle(spa.x,spa.y,spa.width,spa.height);
+				for(var j:int=0;j<_nodeList.length;j++){
+					var node:Sprite = _nodeList[j];
+					if(r.contains(node.x,node.y)){						
+						node.graphics.clear();
+						node.graphics.lineStyle(1,0x000000);
+						node.graphics.beginFill(0xFFFF00,1);
+						node.graphics.drawRect(-4,-4,8,8);
+						selectItems.push(node);	
+						m_selectItemIndexs.push(j);
+					}else{
+						node.graphics.clear();
+						node.graphics.lineStyle(1,0x000000);
+						node.graphics.beginFill(0xCCCCCC,1);
+						node.graphics.drawRect(-4,-4,8,8);
+					}
+				}
+			}
+			
+			public function get selectItemIndexs():Vector.<int>
+			{
+				return m_selectItemIndexs;
+			}
+			
+			public function set selectItemIndexs(value:Vector.<int>):void
+			{
+				m_selectItemIndexs = value;
+			}
+			
+		]]>
+	</fx:Script>
+	
+</s:Group>

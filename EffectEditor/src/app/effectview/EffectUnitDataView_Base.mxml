@@ -1,0 +1,979 @@
+<?xml version="1.0" encoding="utf-8"?>
+<effectview:EffectUnitDataView_Abst xmlns:fx="http://ns.adobe.com/mxml/2009" 
+									xmlns:s="library://ns.adobe.com/flex/spark" 
+									xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:effectview="app.effectview.*" width="532" height="652" 
+									creationComplete="effectunitdataview_abst1_creationCompleteHandler(event)">
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+		<s:ArrayCollection id="keyTypeData">
+			<fx:Object label="位置偏移" index="0"/>
+			<fx:Object label="颜色偏移" index="1"/>
+			<fx:Object label="缩放偏移" index="2"/>
+			<fx:Object label="贴图偏移" index="3"/>
+		</s:ArrayCollection>	
+		
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import app.effectview.data.EffectCommonData;
+			
+			import deltax.common.Util;
+			import deltax.common.resource.Enviroment;
+			import deltax.graphic.effect.data.unit.EffectUnitData;
+			import deltax.graphic.effect.data.unit.EffectUnitFlag;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.ColorPicker;
+			import mx.core.UIComponent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			private var curOffsetKeyMc:Sprite;
+			private var curColorKeyMc:Sprite;
+			private var curScaleKeyMc:Sprite;
+			private var curTextureKeyMc:Sprite;
+			private var socket_arr:Array = ["FIXED","SOCKET_IGNORE_ROTATE","SKELETAL_IGNORE_ROTATE","SOCKET","SKELETAL",
+				"SOCKET_IGNORE_ROTATE_FOLLOW_ROOT_ROTATE","SKELETAL_IGNORE_ROTATE_FOLLOW_ROOT_ROTATE",
+				"FIXED_IGNORE_SCALE","SOCKET_IGNORE_ROTATE_AND_SCALE","SEKLETAL_IGNORE_ROTATE_AND_SCALE",
+				"SOCKET_IGNORE_SCALE","SKELETAL_IGNORE_SCALE","SOCKET_IGNORE_ROTATE_AND_SCALE_FOLLOW_ROOT_ROTATE",
+				"SKELETAL_IGNORE_ROTATE_AND_SCALE_FOLLOW_ROOT_ROTATE"];
+			
+			
+			override public function set info(value:EffectUnitData):void
+			{
+				super.info = value;
+//				updatePos.dataProvider = new ArrayCollection(arr);
+				updateData();
+			}
+			
+			private function updateData():void{
+				this.trackFlag.selected = Util.hasFlag(info.trackFlag,EffectUnitFlag.HIDE_WHEN_UPDATE_POS_NOT_EXIST);
+				//this.offsetKeys.text = info.m_offsetKeys?info.m_offsetKeys.join(";"):"null";
+				//this.textureKeys.text = info.m_textureKeys?info.m_textureKeys.join(";"):"null";
+				//this.m_textureNames.text = info.m_textureNames.join(";");
+				//this.colorKeys.text = info.m_colorKeys?info.m_colorKeys.join(";"):"null";
+				//this.scaleKeys.text = info.m_scaleKeys?info.m_scaleKeys.join(";"):"null";
+				//this.colors.text = info.colors?info.colors.toString():"null";
+				//this.scales.text = info.scales?info.scales.toString():"null";
+				this.startTime.textDisplay.text = info.startTime.toString();
+				this.timeRange.textDisplay.text = info.timeRange.toString();
+				this.parentTrack.text = info.parentTrack.toString();
+				this.updatePos.text = socket_arr[info.updatePos];
+				this.textureCircle.text = info.textureCircle.toString();
+				this.attachName.text = info.attachName;
+				this.userClassName.text = info.userClassName;
+				this.customName.text = info.customName;
+				
+				var arr:Array = [];
+				for (var a:String in info.aniNames){
+					arr.push(a);
+				}
+				this.aniNames.text = arr.toString();
+				
+				updateOffsetKeys();
+				updateColorKeys();
+				updateScaleKeys();
+				updateTexture();
+				/*
+				if(info is ParticleSystemData || info is PolygonTrailData){
+					this.textureCircle.enabled = true;
+				}else{
+					this.textureCircle.enabled = false;					
+				}*/
+				if(attachName.text.length>0)
+				{
+					ModelTimelineView.instance.bindSkeletal.label="取消绑定";
+				}else
+				{
+					ModelTimelineView.instance.bindSkeletal.label="绑定骨骼";
+				}
+				
+			}
+			
+			private function updateOffsetKeys():void{
+				offsetKeyFrames.info = info;								
+			}
+			
+			private function updateOffsetKeysCom():void{
+				if(info.offsets.length>0){
+					curOffset = info.offsets[0];				
+					offsets_x.textDisplay.text = curOffset.x.toString();
+					offsets_y.textDisplay.text = curOffset.y.toString();
+					offsets_z.textDisplay.text = curOffset.z.toString();				
+				}else{
+					offsets_x.textDisplay.text = "0";
+					offsets_y.textDisplay.text = "0";
+					offsets_z.textDisplay.text = "0";				
+				}
+			}
+			
+			private var curOffset:Vector3D;
+			private var curOffsetIndex:int;
+			private function __seOffsetInputText(evt:MouseEvent):void{
+				curOffsetIndex = int(evt.currentTarget.name.split("_")[1]);
+				var vec:Vector3D = info.offsets[curOffsetIndex];
+				curOffset = vec;				
+				offsets_x.textDisplay.text = curOffset.x.toString();
+				offsets_y.textDisplay.text = curOffset.y.toString();
+				offsets_z.textDisplay.text = curOffset.z.toString();		
+				orderKeyId.text = "No."+(offsetKeyFrames.selectIndex+1);
+			}
+			private function __addNewOffsetKeyHandler(event:MouseEvent):void
+			{
+				if(event.target.name.indexOf("offsetKey") != -1)
+					return;
+				
+				var keytimeValue:Number = event.localX/offsetKeyFrames.width;
+				var i:int = 0;
+				while(i<info.m_offsetKeys.length){
+					if(keytimeValue<info.m_offsetKeys[i]){
+						break;
+					}
+					i++;
+				}				
+				info.m_offsetKeys.splice(i,0,keytimeValue);
+				info.offsets.splice(i,0,new Vector3D());
+				
+				updateOffsetKeys();
+			}
+			
+			private var colorKeyFramesBmd:BitmapData;
+			private function updateColorKeysBegin():void{
+				var colorsArr:Array = [];
+				var alphasArr:Array = [];
+				var alphasTempsArr:Array = [];
+				for each(var temp:uint in info.colors){
+					colorsArr.push(temp & 0xFFFFFF);
+					alphasArr.push(temp>>24 & 0xFF);
+					alphasTempsArr.push(1);
+				}
+				var colorKeysArr:Array = [];
+				for each(var keyTemp:Number in info.m_colorKeys){
+					colorKeysArr.push(keyTemp * 255);
+				}
+				
+				var sprite:Sprite = colorKeyFrames.drawLayer;
+				sprite.name = "gradientLayer";
+				sprite.graphics.clear();				
+				var matrix:Matrix=new Matrix();
+				matrix.createGradientBox (colorKeyFrames.width,colorKeyFrames.height) //在这里设置填充的宽高
+				sprite.graphics.beginGradientFill(GradientType.LINEAR,colorsArr,alphasTempsArr,colorKeysArr,matrix);							
+				sprite.graphics.drawRect(0,0,colorKeyFrames.width,colorKeyFrames.height);				
+				sprite.graphics.endFill();										
+				
+				if(colorKeyFramesBmd){
+					colorKeyFramesBmd.fillRect(colorKeyFramesBmd.rect,0);
+					colorKeyFramesBmd.draw(sprite,null,null,null,null,true);
+				}
+				sprite.graphics.lineStyle(1,0x000000);
+				sprite.graphics.lineTo(colorKeyFrames.width,0);
+				sprite.graphics.lineTo(colorKeyFrames.width,colorKeyFrames.height);
+				sprite.graphics.lineTo(0,colorKeyFrames.height);
+				sprite.graphics.lineTo(0,0);
+			}
+			private function updateColorKeys():void{
+				
+				colorKeyFrames.info = info;				
+			}
+			
+			private function updateColorKeysCom():void{
+				this.cx0.text = String(0);
+				this.cx1.text = String(1);
+				this.cy0.text = String(1);
+				this.cy1.text = String(0);
+				
+				if (info.m_colorTexture){
+					info.m_colorTexture.release();
+					info.m_colorTexture = null;					
+				}				
+			}
+			
+			private var curColorTime:uint;
+			private function __seColorInputText(event:MouseEvent):void
+			{
+				curColorTime = event.currentTarget.name.split("_")[1];
+				var ctemp:uint = info.colors[curColorTime];
+				var colorValue:uint = (ctemp & 0xFFFFFF);
+				colorPickerId.selectedColor = colorValue;
+				curColorEditId.text = colorValue.toString(16);
+				this.alphaEditId.text = String(ctemp>>24 & 0xFF);
+				colorKeyOneId.text = "No."+(curColorTime+1);
+				orderKeyId.text = "No."+(colorKeyFrames.selectIndex+1);
+			}
+			private function __addNewColorKeyHandler(event:MouseEvent):void{
+				if(event.target.name.indexOf("colorKey") != -1)
+					return;
+				
+				var addColorView:EffectColorKeyAddFrame = PopUpManager.createPopUp(this,EffectColorKeyAddFrame,true) as EffectColorKeyAddFrame;
+				PopUpManager.centerPopUp(addColorView);
+				addColorView.keytimeId.text = (event.localX/colorKeyFrames.width).toString();
+				addColorView.alphaId.text = (1 - event.localY/colorKeyFrames.height).toString();		
+				var acolor:uint =  colorKeyFramesBmd.getPixel(event.localX,event.localY);
+				addColorView.colorTF.text = acolor.toString(16);
+				addColorView.colorPickerId.selectedColor = acolor;
+				addColorView.callBack = function (keytimeValue:Number,colorValue:Number,alphaValue:Number):void{
+					if(!info.m_colorKeys) info.m_colorKeys = new Vector.<Number>(); 
+					var tempColor:uint = colorValue | (((alphaValue * 255)<<24) & 0xFF000000);
+					var i:int = 0;
+					while(i<info.m_colorKeys.length){
+						if(keytimeValue<info.m_colorKeys[i]){
+							break;
+						}
+						i++;
+					}
+					info.m_colorKeys.splice(i,0,keytimeValue);
+					info.colors.splice(i,0,tempColor);
+					
+					updateColorKeys();
+				}
+			}
+			
+			private function updateScaleKeys():void{
+				scaleKeyFrames.info = info;				
+			}
+			
+			private function updateScaleKeysCom():void{
+				this.sx0.text = String(0);
+				this.sx1.text = String(1);
+				this.sy0.text = String(255);
+				this.sy1.text = String(0);
+			}
+			
+			private function __addNewScaleKeyHandler(event:MouseEvent):void{
+				if(event.target.name.indexOf("scaleKey") != -1)
+					return;
+				
+				var keytimeValue:Number = event.localX/scaleKeyFrames.width;
+				var i:int = 0;
+				while(i<info.m_scaleKeys.length){
+					if(keytimeValue<info.m_scaleKeys[i]){
+						break;
+					}
+					i++;
+				}
+				var scaleValue:Number = (1 - event.localY/scaleKeyFrames.height) * 255;
+				info.m_scaleKeys.splice(i,0,keytimeValue);
+				info.scales.splice(i,0,scaleValue);
+				
+				updateScaleKeys();
+			}
+			
+			private function updateTexture():void
+			{
+				textureKeyFrames.info = info;
+			}
+			
+			private function updateTextureCom():void{
+				if(info.m_textureNames.length>0)
+					m_currentTextureName.text = info.m_textureNames[0];
+			}
+			
+			private function __setTextureInputText(event:MouseEvent):void{				
+				m_currentTextureName.text = info.m_textureNames[textureKeyFrames.selectIndex];
+				m_currentTextureName.toolTip =m_currentTextureName.text; 
+				orderKeyId.text = "No."+(textureKeyFrames.selectIndex+1);
+			}
+			
+			private function __setScaleInputText(event:MouseEvent):void{				
+				orderKeyId.text = "No."+(scaleKeyFrames.selectIndex+1);
+				scaleEditId.text = ""+info.scales[scaleKeyFrames.selectIndex];
+			}					
+			
+			private function changeTextureNameHandler(event:Event):void{
+				if(textureKeyFrames.selectIndex!=-1){
+					var oldStr:String = info.m_textureNames[textureKeyFrames.selectIndex];
+					if(oldStr != m_currentTextureName.text){
+						info.m_textureNames[textureKeyFrames.selectIndex] = m_currentTextureName.text.toLocaleLowerCase().replace(/\\/g,"/");						
+						updateUnitDataTexture();
+					}
+				}
+			}
+			
+			private function updateUnitDataTexture():void
+			{
+				var temp:Vector.<String> = info.m_textureNames;
+				info.destroy();
+				info.textures.splice(0,info.textures.length);
+				info.m_textureNames = temp;
+				info.makeResValid();
+			}
+			private function __addNewTextureKeyHandler(event:MouseEvent):void{
+				if(event.target.name.indexOf("textureKey") != -1)
+					return;
+				
+				var keytimeValue:Number = event.localX/textureKeyFrames.width;
+				var i:int = 0;
+				while(i<info.m_textureKeys.length){
+					if(keytimeValue<info.m_textureKeys[i]){
+						break;
+					}
+					i++;
+				}
+				info.m_textureKeys.splice(i,0,keytimeValue);
+				info.m_textureNames.splice(i,0,Enviroment.ResourceRootPath + "fx/tex/defaulttexturebmd.jpg");
+				updateUnitDataTexture();
+				updateTexture();
+				
+			}
+			
+			private var bezierPanel:BezierPanel;
+			private function bezierBtn_clickHandler(event:MouseEvent):void{
+				if(!bezierPanel){
+					bezierPanel = new BezierPanel();
+				}
+				PopUpManager.addPopUp(bezierPanel,this);
+				bezierPanel.info = _info;
+				bezierPanel.addEventListener(BezierPanel.UPDATE_DATA,function(e:Event):void{
+					updateOffsetKeys();
+				});
+			}
+			
+			private function viewTextureHandler(event:MouseEvent):void{
+				var textureView:PreviewTextureImageView = PopUpManager.createPopUp(this,PreviewTextureImageView,false) as PreviewTextureImageView;
+				PopUpManager.centerPopUp(textureView);
+				textureView.imageUrl = m_currentTextureName.text;
+			}
+			
+			private function changeInfoMOutHandler(event:Event):void{
+				if(this.stage)
+					this.stage.focus = null;	
+			}
+			
+			private function changeInfoHandler(event:Event):void
+			{
+				if(event && event.currentTarget is NumericStepper)
+				{
+					var aa:NumericStepper = event.currentTarget as NumericStepper;
+					if(isNaN(aa.value))
+					{
+						aa.value = 0;
+					}					
+				}
+				
+				var needUpdateTimeline:Boolean = false;
+				if(Number(startTime.textDisplay.text) != info.startTime || Number(timeRange.textDisplay.text) != info.timeRange)
+				{
+					needUpdateTimeline = true;
+				}
+				
+				info.startTime = Number(startTime.textDisplay.text);
+				info.timeRange = Number(timeRange.textDisplay.text);
+				if(info.parentTrack == -1 || (info.parentTrack>-1 && info.effectData && info.effectData.m_effectUnitDatas[info.parentTrack]))
+				{
+					info.parentTrack = parseInt(parentTrack.text);
+				}
+				if(EffectTimelineView.instance)
+				{
+					EffectTimelineView.instance.updateDataParent();
+				}
+				else
+				{
+					Alert.show("no parentTrack or parentTrack max with self：" + parentTrack.text);
+					//parentTrack.text = 0;
+				}
+//				info.updatePos = updatePos.selectedIndex;
+				info.textureCircle = int(textureCircle.text);
+//				info.attachName = attachName.text;
+				
+				info.userClassName = userClassName.text;
+				if(info.customName!=customName.text)
+				{
+					info.customName = customName.text;					
+					EffectCommonData.Instance.effectMainView.updateTimeline();
+				}
+				info.trackFlag =  Util.setFlag(info.trackFlag,EffectUnitFlag.HIDE_WHEN_UPDATE_POS_NOT_EXIST,trackFlag.selected);
+				if(curOffset)
+				{
+					curOffset.x = Number(offsets_x.textDisplay.text);
+					curOffset.y = Number(offsets_y.textDisplay.text);
+					curOffset.z = Number(offsets_z.textDisplay.text);					
+				}
+				
+				if(needUpdateTimeline)
+				{
+					EffectCommonData.Instance.effectMainView.updateTimeline();
+				}
+											
+			}
+			
+			
+			
+			private function delOffsetHandler(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+				if(offsetKeyFrames.selectIndex!=-1){
+					var curOffsetKeyIdx:int = offsetKeyFrames.selectIndex;//curOffsetKeyMc.name.split("_")[1];
+					if(info.m_offsetKeys.length==1){
+						Alert.show("必须存在一个位置节点");
+						return;
+					}
+					info.m_offsetKeys.splice(curOffsetKeyIdx,1);
+					info.offsets.splice(curOffsetKeyIdx,1);
+					updateOffsetKeys();
+					//curOffsetKeyMc = null;
+					offsetKeyFrames.selectIndex = -1;
+				}
+				if(offsetKeyFrames.selectItemIndexs.length!=0){
+					for(var i:int=offsetKeyFrames.selectItemIndexs.length-1;i>=0;i--){
+						var idx:int = offsetKeyFrames.selectItemIndexs[i];
+						if(idx==0)continue;
+						info.m_offsetKeys.splice(idx,1);
+						info.offsets.splice(idx,1);
+					}
+					updateOffsetKeys();
+					offsetKeyFrames.selectItemIndexs.length=0;
+				}
+				
+			}
+			
+			private function delColorHandler(event:MouseEvent):void
+			{
+				if(colorKeyFrames.selectIndex!=-1){
+					var curColorKeyIdx:int = colorKeyFrames.selectIndex;//curColorKeyMc.name.split("_")[1];
+					info.m_colorKeys.splice(curColorKeyIdx,1);
+					info.colors.splice(curColorKeyIdx,1);
+					updateColorKeys();
+					//curColorKeyMc = null;
+					colorKeyFrames.selectIndex=-1;
+				}
+			}
+			
+			
+			private function delScaleHandler(event:MouseEvent):void
+			{
+				if(scaleKeyFrames.selectIndex!=-1){
+					var curScaleKeyIdx:int = scaleKeyFrames.selectIndex;//curScaleKeyMc.name.split("_")[1];
+					info.m_scaleKeys.splice(curScaleKeyIdx,1);
+					info.scales.splice(curScaleKeyIdx,1);
+					updateScaleKeys();
+					//curScaleKeyMc = null;
+					scaleKeyFrames.selectIndex=-1;
+				}
+			}
+			
+			private function delTextureHandler(event:MouseEvent):void
+			{
+				if(allTextureId.selected){
+					for(var i:int=info.m_textureKeys.length-1;i>0;i--){
+						info.m_textureKeys.splice(i,1);
+						info.m_textureNames.splice(i,1);
+					}
+					updateTexture();
+					curTextureKeyMc = null;
+					textureKeyFrames.selectIndex = -1;
+					updateUnitDataTexture();
+					allTextureId.selected = false;
+				}else{
+					if(textureKeyFrames.selectIndex!=-1){					
+						var curTextureKeyIdx:int = textureKeyFrames.selectIndex;//curTextureKeyMc.name.split("_")[1];
+						if(info.m_textureKeys.length==1){
+							Alert.show("必须存在一张贴图");
+							return;
+						}
+						info.m_textureKeys.splice(curTextureKeyIdx,1);
+						info.m_textureNames.splice(curTextureKeyIdx,1);
+						updateTexture();
+						curTextureKeyMc = null;
+						textureKeyFrames.selectIndex = -1;
+						updateUnitDataTexture();					
+					}
+				}
+			}
+			
+			protected function selectTextureFileHandler(event:MouseEvent):void
+			{
+				var file:File = new File(Enviroment.ResourceRootPath + "fx/tex");
+				
+				if("bsBtn"==event.currentTarget.name)
+				{
+					file.addEventListener(FileListEvent.SELECT_MULTIPLE,selecthanlder);
+					file.browseForOpenMultiple("为资源添加图片(插入)",[new FileFilter("图片","*.jpg;*.png;*.JPG;*.PNG")]);
+				}else
+				{												
+					file.browseForOpenMultiple("选择贴图(替换)",[new FileFilter("jpg,png","*.jpg;*.png")]);
+					file.addEventListener(FileListEvent.SELECT_MULTIPLE,selectTextureFileFileHandler);
+				}
+			}
+				
+			protected function selectTextureFileFileHandler(event:FileListEvent):void
+			{				
+				event.currentTarget.removeEventListener(Event.SELECT,selectTextureFileFileHandler);				
+				var filePath:String = (event.files[0] as File).nativePath;				
+				var file:File = new File(Enviroment.ResourceRootPath);
+				if(filePath.toLocaleLowerCase().indexOf(file.nativePath.toLocaleLowerCase()) == -1){
+					Alert.show("贴图路径必需为工作目录路径");
+				}else{				
+					var list:Array = event.files.sortOn("name");
+					var curIndex:int=textureKeyFrames.selectIndex;
+					m_currentTextureName.text = filePath;						
+					for(var i:int=0;i<event.files.length;i++){
+						if(!(info.m_textureNames.length>=curIndex)) break;
+						var fl:File = list[i];						
+						info.m_textureNames[curIndex] = fl.nativePath.toLocaleLowerCase().replace(/\\/g,"/");
+						curIndex++;						
+						//changeTextureNameHandler(null);			
+					}
+					updateUnitDataTexture();
+				}
+			}
+			
+			protected function colorPickerId_changeHandler(event:Event):void
+			{				
+				if(colorKeyFrames.selectIndex!=-1){
+					var colorValue:uint = colorPickerId.selectedColor;
+					curColorEditId.text = colorValue.toString(16);
+					var alphaValue:uint = info.colors[curColorTime] & 0xFF000000;
+					this.alphaEditId.text = String(alphaValue>>24 & 0xFF);
+					var tempColor:uint = colorValue | alphaValue;
+					info.colors[curColorTime] = tempColor;
+					updateColorKeys();
+				}
+			}
+			
+			protected function effectunitdataview_abst1_creationCompleteHandler(event:FlexEvent):void
+			{
+				updateData();
+			}
+			
+			
+			
+			protected function updatePos_creationCompleteHandler(event:FlexEvent):void
+			{
+				event.currentTarget.textInput.editable = true;				
+			}
+			
+			
+			protected function selecthanlder(event:FileListEvent):void
+			{
+				event.currentTarget.removeEventListener(Event.SELECT,selecthanlder);
+				var list:Array = event.files.sortOn("name");
+				
+				var filePath:String
+				var file:File = new File(Enviroment.ResourceRootPath);
+				for each(var afile:File in list){
+					filePath = afile.nativePath;
+					if(filePath.toLocaleLowerCase().indexOf(file.nativePath.toLocaleLowerCase()) == -1){
+						Alert.show("贴图路径必需为工作目录路径");
+						return;
+					}
+				}
+				
+				var tmpList:Array = [];
+				for each(afile in list){
+					tmpList.push(afile);
+				}
+				tmpList.sortOn("name");																	
+				
+				info.m_textureNames = info.m_textureNames.concat()||new Vector.<String>; 
+				info.m_textureKeys = info.m_textureKeys.concat()||new Vector.<Number>;				
+				var start:int = textureKeyFrames.selectIndex;
+				for(var i:int=0;i<tmpList.length;i++){
+					var af:File = tmpList[i];
+					var tmpName:String= af.nativePath.toLocaleLowerCase().replace(/\\/g,"/");
+					if(info.m_textureNames.length>i && info.m_textureNames[i].indexOf("defaulttexturebmd")!=-1){
+						info.m_textureNames[i] = tmpName;
+					}else{
+						if(start==-1){
+							info.m_textureNames.push(tmpName);
+						}else{
+							info.m_textureNames.splice(start+1,0,tmpName);
+							start++;
+						}
+						
+					}									
+				}
+				
+				var del:Number = 1/info.m_textureNames.length;
+				for(i=0;i<info.m_textureNames.length;i++){
+					info.m_textureKeys[i] = i*del;
+				}
+				//trace(info.m_textureNames);
+				//trace(info.m_textureKeys);
+								
+				updateUnitDataTexture();
+				updateTexture();
+				m_currentTextureName.text = "";
+								
+			}
+			
+			protected function curColorEditId_textInputHandler(event:Event):void
+			{
+				var color:uint = uint("0x"+curColorEditId.text);
+				colorPickerId.selectedColor = color;
+				if(colorKeyFrames.selectIndex!=-1){
+					var colorValue:uint = colorPickerId.selectedColor;
+					curColorEditId.text = colorValue.toString(16);
+					var alphaValue:uint = info.colors[curColorTime] & 0xFF000000;
+					this.alphaEditId.text = String(alphaValue>>24 & 0xFF);
+					var tempColor:uint = colorValue | alphaValue;
+					info.colors[curColorTime] = tempColor;
+					updateColorKeys();
+				}
+			}
+			
+			protected function scaleKeyFrames_creationCompleteHandler(event:FlexEvent):void
+			{
+				colorKeyFramesBmd = new BitmapData(colorKeyFrames.width,colorKeyFrames.height,true,0);							
+			}
+			
+			
+			private static var copyData:EffectUnitData = new EffectUnitData();
+			private static var copyOffset:Vector3D;
+			protected function copyHanlder(event:MouseEvent):void
+			{
+				var i:int=0;
+				switch(event.currentTarget.name)
+				{
+					case "colorKeys":
+						copyData.m_colorKeys = new Vector.<Number>();
+						if(info.m_colorKeys){
+							for(i=0;i<info.m_colorKeys.length;i++){
+								copyData.m_colorKeys[i] = info.m_colorKeys[i];
+							}
+						}
+						copyData.m_colors = new Vector.<uint>();
+						if(info.m_colors){
+							for(i=0;i<info.m_colors.length;i++){
+								copyData.m_colors[i] = info.m_colors[i];
+							}
+						}
+						break;
+					case "scaleKeys":
+						copyData.m_scaleKeys =new Vector.<Number>();
+						if(info.m_scaleKeys){
+							for(i=0;i<info.m_scaleKeys.length;i++){
+								copyData.m_scaleKeys[i] = info.m_scaleKeys[i];
+							}
+						}
+						copyData.m_scales = new Vector.<uint>();
+						if(info.m_scales){
+							for(i=0;i<info.m_scaleKeys.length;i++){
+								copyData.m_scales[i] = info.m_scales[i];
+							}
+						}
+						break;
+					case "offset":
+						if(curOffset){
+							copyOffset = curOffset.clone();							
+						}
+						break;					
+					
+				}
+			}
+			
+			protected function pasteHandler(event:MouseEvent):void
+			{
+				switch(event.currentTarget.name)
+				{
+					case "colorKeys":
+						info.m_colorKeys = copyData.m_colorKeys.concat();
+						info.m_colors = copyData.m_colors.concat();
+						updateColorKeys();
+						break;
+					case "scaleKeys":
+						info.m_scaleKeys = copyData.m_scaleKeys;
+						info.m_scales = copyData.m_scales;
+						updateScaleKeys();
+						break;
+					case "offset":
+						if(copyOffset){
+							var index:int = offsetKeyFrames.selectIndex;
+							if(info.offsets[index])
+								info.offsets[index] = copyOffset.clone();		
+							offsets_x.textDisplay.text = copyOffset.x.toString();
+							offsets_y.textDisplay.text = copyOffset.y.toString();
+							offsets_z.textDisplay.text = copyOffset.z.toString();
+						}
+						break;
+				}
+			}
+			
+			protected function transitBtn_clickHandler(event:MouseEvent):void
+			{
+				var keyMc:Sprite;
+				var startIndex:int = (int(colorKey1Id.text)-1);
+				var endIndex:int = (int(colorKey2Id.text)-1);
+				if(startIndex<0 || endIndex>info.colors.length || startIndex>info.colors.length || endIndex<0)return;
+				
+				var colorsArr:Array = [];				
+				var alphasTempsArr:Array = [1,1];				
+				colorsArr.push(info.colors[startIndex] & 0xFFFFFF);
+				colorsArr.push(info.colors[endIndex] & 0xFFFFFF);
+				
+				var colorKeysArr:Array = [];				
+				colorKeysArr.push(info.m_colorKeys[startIndex] * 255);
+				colorKeysArr.push(info.m_colorKeys[endIndex] * 255);
+				
+				var sprite:Sprite = (colorKeyFrames.getElementAt(0) as UIComponent).getChildByName("gradientLayer") as Sprite;				
+				//
+				keyMc = sprite.getChildByName("colorKey_"+startIndex) as Sprite;
+				var startX:int = keyMc.x;
+				keyMc = sprite.getChildByName("colorKey_"+endIndex) as Sprite;
+				var endX:int = keyMc.x;
+				var matrix:Matrix=new Matrix();
+				matrix.createGradientBox (sprite.width,2); //在这里设置填充的宽高
+				var newSp:Sprite = new Sprite();
+				newSp.graphics.beginGradientFill(GradientType.LINEAR,colorsArr,alphasTempsArr,colorKeysArr,matrix);							
+				newSp.graphics.drawRect(0,0,sprite.width,2);				
+				newSp.graphics.endFill();
+				var tmpBmd:BitmapData =new BitmapData(newSp.width,newSp.height,true,0);
+				tmpBmd.draw(newSp);
+				var len:int = info.m_colors.length;
+				for(var i:int=0;i<len;i++){
+					keyMc = sprite.getChildByName("colorKey_"+i) as Sprite;						
+					if(i>startIndex && i<endIndex){
+						if(keyMc.y==0)keyMc.y=1;
+						var c:uint = tmpBmd.getPixel(keyMc.x,0);
+						info.m_colors[i] = (info.m_colors[i] &0xFF000000)| c; 						
+												
+					}
+				}								
+				
+				updateColorKeys();
+			}
+			
+			protected function changekeyUpHandler(event:KeyboardEvent):void
+			{
+				if(event.keyCode==Keyboard.ENTER){
+					changeInfoHandler(null);
+				}
+			}
+			
+			protected function orderBoxCloseHandler(event:Event):void
+			{
+				var fun:Function; 
+				switch(orderBox.selectedIndex){
+					case 0:fun = offsetKeyFrames.divideEqual;break;
+					case 1:fun = colorKeyFrames.divideEqual;break;
+					case 2:fun = scaleKeyFrames.divideEqual;break;
+					case 3:fun = textureKeyFrames.divideEqual;break;
+					default:return;
+				}
+				fun(int(orderKey1.text),int(orderKey2.text));
+			}
+			
+			protected function loopTextureHandler(event:MouseEvent):void
+			{
+				var atFrame:EffectLoopTextureFrame = PopUpManager.createPopUp(this,EffectLoopTextureFrame,true) as EffectLoopTextureFrame;
+				PopUpManager.centerPopUp(atFrame);
+				atFrame.callBack = atFrameCallBack;
+			}
+			
+			private function atFrameCallBack(files:Array,loopCnt:uint):void
+			{
+				var filePath:String
+				var file:File = new File(Enviroment.ResourceRootPath);
+				for each(var afile:File in files)
+				{
+					filePath = afile.nativePath;
+					if(filePath.toLocaleLowerCase().indexOf(file.nativePath.toLocaleLowerCase()) == -1)
+					{
+						Alert.show("贴图路径必需为工作目录路径");
+						return;
+					}
+				}
+				
+				var tmpList:Array = [];
+				for each(afile in files)
+				{
+					tmpList.push(afile);
+				}
+				tmpList.sortOn("name");					
+				
+				for(var j:int=info.m_textureKeys.length-1;j>=0;j--)
+				{
+					info.m_textureKeys.splice(j,1);
+					info.m_textureNames.splice(j,1);
+				}
+				curTextureKeyMc = null;
+				textureKeyFrames.selectIndex = -1;
+				
+				
+				info.m_textureNames = info.m_textureNames.concat()||new Vector.<String>; 
+				info.m_textureKeys = info.m_textureKeys.concat()||new Vector.<Number>;				
+				var start:int = textureKeyFrames.selectIndex;
+				var af:File;
+				for(var i:int=0;i<tmpList.length * loopCnt;i++)
+				{
+					af = tmpList[i%tmpList.length];
+					var tmpName:String= af.nativePath.toLocaleLowerCase().replace(/\\/g,"/");
+					if(info.m_textureNames.length>i && info.m_textureNames[i].indexOf("defaulttexturebmd")!=-1)
+					{
+						info.m_textureNames[i] = tmpName;
+					}else
+					{
+						if(start==-1)
+						{
+							info.m_textureNames.push(tmpName);
+						}else
+						{
+							info.m_textureNames.splice(start+1,0,tmpName);
+							start++;
+						}
+						
+					}									
+				}
+				
+				var del:Number = 1/info.m_textureNames.length;
+				for(i=0;i<info.m_textureNames.length;i++)
+				{
+					info.m_textureKeys[i] = i*del;
+				}
+				
+				updateUnitDataTexture();
+				updateTexture();
+				m_currentTextureName.text = "";
+			}
+			
+			protected function alphaEditId_changeHandler(event:KeyboardEvent):void
+			{
+				if(event.keyCode!=Keyboard.ENTER)return;
+				var alpha:uint = uint(alphaEditId.text);
+				if(alpha>255){
+					alphaEditId.text = String(255);
+					alpha = 255;
+				}
+					
+				if(colorKeyFrames.selectIndex!=-1){
+					var colorValue:uint = colorPickerId.selectedColor;
+					curColorEditId.text = colorValue.toString(16);
+					var alphaValue:uint = alpha<<24 & 0xFF000000;
+					var tempColor:uint = colorValue | alphaValue;
+					info.colors[curColorTime] = tempColor;
+					updateColorKeys();
+				}
+			}
+			
+			protected function scaleEditId_changeHandler(event:KeyboardEvent):void
+			{
+				if(event.keyCode!=Keyboard.ENTER)return;
+				if(scaleKeyFrames.selectIndex!=-1){
+					var tmp:int = int(scaleEditId.text);
+					tmp = tmp>255?255:tmp;
+					tmp = tmp<0?0:tmp;
+					info.scales[scaleKeyFrames.selectIndex]=tmp;					
+					updateScaleKeys();
+				}
+			}				
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<s:Label x="8" y="522" text="是否显示渲染"/>
+	<s:Label x="8" y="102" width="55" height="12" text="位置偏移"/>
+	<s:Label x="8" y="387" width="48" height="12" text="贴图"/>
+	<s:Label x="8" y="191" height="11" text="颜色值"/>
+	<s:Label x="8" y="310" text="缩放值"/>
+	<s:Label x="19" y="138" text="偏移值"/>
+	<s:Label x="132" y="11" text="开始时间" toolTip="开始时间(毫秒)"/>
+	<s:Label x="296" y="11" text="持续时间" toolTip="持续时间(毫秒)"/>
+	<s:Label x="8" y="11" text="父类索引"/>
+	<s:TextInput id="parentTrack" x="60" y="6" width="55"  keyUp="changekeyUpHandler(event)"/>
+	<s:Label x="8" y="552" text="骨骼绑定类型"/>
+	<s:Label x="8" y="493" text="textureCircle"/>
+	<s:TextInput id="textureCircle" x="91" y="483" width="132" change="changeInfoHandler(event)" enabled="true"/>
+	<s:Label x="8" y="577" text="骨骼名"/>
+	<s:TextInput id="attachName" x="90" y="570" width="327" enabled="false"/>
+	<s:Label x="8" y="625" text="类名"/>
+	<s:TextInput id="userClassName" x="90" y="622" width="327" change="changeInfoHandler(event)" editable="false" selectable="false" enabled="false"/>
+	<s:Label x="242" y="491" text="自定义命名"/>
+	<s:TextInput id="customName" x="305" y="484" width="131" restrict="a-z A-Z _ 0-9" keyUp="changekeyUpHandler(event)"/>
+	<s:Label x="8" y="601" text="骨骼动画名"/>
+	<s:TextInput id="aniNames" x="90" y="596" width="327" change="changeInfoHandler(event)" editable="false" selectable="false" enabled="false"/>
+	<s:TextInput id="m_currentTextureName" visible="true" x="61" y="413" width="343" change="changeTextureNameHandler(event)" editable="false"/>
+	<!--<s:Group id="colorKeyFrames" x="60" y="162" width="379" height="61"/>-->
+	<effectview:KeyFrame id="colorKeyFrames" x="60" y="173" width="406" height="61" frameType="{KeyFrame.COLORKEY}"
+						 clickItemHandler="{__seColorInputText}"
+						 addNewItemKeyHandler="{__addNewColorKeyHandler}"
+						 updateDataComplete="{updateColorKeysCom}"
+						 updateDataBegin="{updateColorKeysBegin}"/>	
+	<!--<s:Group id="scaleKeyFrames" x="63" y="267" width="379" height="61" creationComplete="scaleKeyFrames_creationCompleteHandler(event)"/>-->
+	<effectview:KeyFrame id="scaleKeyFrames" x="63" y="289" width="403" height="61" creationComplete="scaleKeyFrames_creationCompleteHandler(event)"
+						 clickItemHandler="{__setScaleInputText}"
+						 frameType="{KeyFrame.SCALEKEY}"
+						 updateDataComplete="{updateScaleKeysCom}"
+						 addNewItemKeyHandler="{__addNewScaleKeyHandler}"
+						 />
+	<s:Label id="cy0" x="470" y="173" text="m"/>
+	<s:Label id="cy1" x="468" y="223" text="m"/>
+	<s:Label id="cx0" x="58" y="237" text="m"/>
+	<s:Label id="cx1" x="455" y="238" text="m"/>
+	<s:Label id="sy0" x="471" y="287" text="m"/>
+	<s:Label id="sy1" x="470" y="340" text="m"/>
+	<s:Label id="sx0" x="62" y="352" text="m"/>
+	<s:Label id="sx1" x="455" y="352" text="m"/>
+	<s:Button x="250" y="441" width="84" height="25" label="预览图片" click="viewTextureHandler(event)"/>
+	<s:CheckBox id="trackFlag" x="90" y="518" label="HIDE_WHEN_UPDATE_POS_NOT_EXIST"  change="changeInfoHandler(event)"/>
+	<!--<s:Group id="textureKeyFrames" x="61" y="350" width="379" height="21" />-->
+	<effectview:KeyFrame id="textureKeyFrames" x="61" y="379" width="405" height="31" frameType="{KeyFrame.TEXTUREKEY}"
+						 clickItemHandler="{__setTextureInputText}"
+						 addNewItemKeyHandler="{__addNewTextureKeyHandler}"
+						 updateDataComplete="{updateTextureCom}"/>
+	<!--<s:Group id="offsetKeyFrames" x="60" y="94" width="379" height="21"/>-->
+	<effectview:KeyFrame id="offsetKeyFrames" x="60" y="88" width="406" height="37" frameType="{KeyFrame.OFFSETKEY}" 
+						 clickItemHandler="{__seOffsetInputText}"   
+						 addNewItemKeyHandler="{__addNewOffsetKeyHandler}"
+						 updateDataComplete="{updateOffsetKeysCom}"/>
+	<s:Button x="500" y="100" width="28" height="18" label="X" click="delOffsetHandler(event)"
+			  fontSize="10"/>
+	<s:Button x="500" y="172" width="28" height="18" label="X" click="delColorHandler(event)"
+			  fontSize="10"/>
+	<s:Button x="500" y="289" width="28" height="18" label="X" click="delScaleHandler(event)"
+			  fontSize="10"/>
+	<s:Button x="500" y="195" width="28" height="18" label="C" name="colorKeys" click="copyHanlder(event)" toolTip="copy"
+			  fontSize="10"/>
+	<s:Button x="376" y="49" width="28" height="18" label="C" name="offset" click="copyHanlder(event)" toolTip="copy"
+			  fontSize="10"/>
+	<s:Button x="500" y="216" width="28" height="18" label="P" name="colorKeys" click="pasteHandler(event)" toolTip="paste"
+			  fontSize="10"/>
+	<s:Button x="412" y="49" width="28" height="18" label="P" name="offset" click="pasteHandler(event)" toolTip="paste"
+			  fontSize="10"/>
+	<s:Button x="500" y="311" width="28" height="18" label="C" name="scaleKeys" click="copyHanlder(event)" toolTip="copy"
+			  fontSize="10"/>
+	<s:Button x="500" y="332" width="28" height="18" label="P" name="scaleKeys" click="pasteHandler(event)" toolTip="paste"
+			  fontSize="10"/>
+	<s:Button x="8" y="413" width="28" label="X" click="delTextureHandler(event)"/>
+	<s:Button x="61" y="441" width="79" height="25" label="打开图片" click="selectTextureFileHandler(event)"
+			  name="bBtn"/>
+	<s:Button x="146" y="441" width="98" height="25" label="打开多张图片"
+			  click="selectTextureFileHandler(event)" name="bsBtn"/>
+	<s:TextInput id="alphaEditId" x="8" y="211" width="47" keyUp="alphaEditId_changeHandler(event)"
+				 editable="true" prompt="纵值"/>
+	<s:TextInput id="scaleEditId" x="8" y="328" width="47"
+				 keyUp="scaleEditId_changeHandler(event)" editable="true" prompt="纵值"/>
+	<s:TextInput x="145" y="249" width="47" id="curColorEditId" editable="true" change="curColorEditId_textInputHandler(event)"/>
+	<mx:ColorPicker x="196" y="249" close="colorPickerId_changeHandler(event)" id="colorPickerId" />
+	<s:NumericStepper id="offsets_x" x="59" y="132" width="135" maximum="1000000" minimum="-1000000"
+					  stepSize="0.1" change="changeInfoHandler(event)" mouseOut="changeInfoMOutHandler(event)"/>
+	<s:NumericStepper id="offsets_y" x="210" y="132" width="125" maximum="1000000" minimum="-1000000"
+					  stepSize="0.1" change="changeInfoHandler(event)" mouseOut="changeInfoMOutHandler(event)"/>
+	<s:NumericStepper id="offsets_z" x="347" y="132" width="119" maximum="1000000" minimum="-1000000"
+					  stepSize="0.1" change="changeInfoHandler(event)" mouseOut="changeInfoMOutHandler(event)" />
+	<s:NumericStepper id="startTime" x="183" y="6" width="100" maximum="1000000" minimum="-1000000"
+					  stepSize="1" change="changeInfoHandler(event)"  mouseOut="changeInfoMOutHandler(event)"/>
+	<s:NumericStepper id="timeRange" x="348" y="6" width="100" maximum="1000000" minimum="-1000000"
+					  stepSize="1" change="changeInfoHandler(event)" mouseOut="changeInfoMOutHandler(event)" />
+	<s:Label id="colorKeyOneId" x="102" y="255" width="38" text="No."/>
+	<s:Label id="orderKeyId" x="114" y="52" width="38" text="No."/>
+	<s:TextInput id="colorKey1Id" x="228" y="248" width="51"/>
+	<s:TextInput id="colorKey2Id" x="293" y="248" width="49"/>
+	<s:TextInput id="orderKey1" x="158" y="46" width="38" restrict="0-9"/>
+	<s:TextInput id="orderKey2" x="220" y="46" width="41" restrict="0-9"/>
+	<s:Label x="204" y="46" width="11" height="22" text="to" verticalAlign="middle"/>
+	<s:Label x="282" y="248" width="11" height="22" text="to" verticalAlign="middle"/>
+	<s:Button id="transitBtn" x="348" y="248" width="73" label="颜色过渡" click="transitBtn_clickHandler(event)"/>
+	<mx:ComboBox id="orderBox" x="8" y="47" width="90" dataProvider="{keyTypeData}"/>
+	<s:Button id="divideBtn" x="271" y="46" width="48" label="平分" click="orderBoxCloseHandler(event)"/>
+	<s:Button id="bezierBtn" x="321" y="46" width="48" label="曲线" click="bezierBtn_clickHandler(event)"/>
+	<s:CheckBox id="allTextureId" x="410" y="417" label="是否删除全部"/>
+	<s:Button x="339" y="441" width="130" height="25" label="插入多张图片(循环)" click="loopTextureHandler(event)"/>
+	<mx:HRule x="0" y="37" width="100%" strokeColor="0" strokeWidth="2"/>
+	<mx:HRule x="0" y="79" width="100%" strokeColor="0" strokeWidth="2"/>
+	<mx:HRule x="0" y="166" width="100%" strokeColor="0" strokeWidth="2"/>
+	<mx:HRule x="0" y="281" width="100%" strokeColor="0" strokeWidth="2"/>
+	<mx:HRule x="0" y="371" width="100%" strokeColor="0" strokeWidth="2"/>
+	<mx:HRule x="0" y="475" width="100%" strokeColor="0" strokeWidth="2"/>
+	<s:TextInput id="updatePos" x="90" y="544" width="328" enabled="false"/>
+</effectview:EffectUnitDataView_Abst>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<effectview:EffectUnitDataView_Abst xmlns:fx="http://ns.adobe.com/mxml/2009" 
+									xmlns:s="library://ns.adobe.com/flex/spark" 
+									xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:effectview="app.effectview.*"
+		 width="828" height="684">
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import deltax.graphic.effect.data.unit.DynamicLightData;
+			import deltax.graphic.effect.data.unit.EffectUnitData;
+			
+			public function get theInfo():DynamicLightData{
+				return this._info as DynamicLightData;
+			}
+			override public function set info(value:EffectUnitData):void{
+				super.info = value;
+				baseId.info = value;
+				
+				updateData();
+			}
+			private function updateData():void{
+				this.m_range.text = theInfo.m_range.toString();
+				this.m_minStrong.text = theInfo.m_minStrong.toString();
+				this.m_maxStrong.text = theInfo.m_maxStrong.toString();
+			}
+			
+			private function changeInfoHandler(event:Event):void{
+				theInfo.m_range = Number(this.m_range.text);
+				theInfo.m_minStrong = Number(this.m_minStrong.text);
+				theInfo.m_maxStrong = Number(this.m_maxStrong.text);
+			}
+		]]>
+	</fx:Script>
+	<effectview:EffectUnitDataView_Base id="baseId" x="299" y="1">
+	</effectview:EffectUnitDataView_Base>
+	<s:Label x="10" y="10" text="半径"/>
+	<s:TextInput id="m_range" x="94" y="4" change="changeInfoHandler(event)"/>
+	<s:Label x="13" y="64" text="强度(min)"/>
+	<s:TextInput id="m_maxStrong" x="95" y="58" change="changeInfoHandler(event)"/>
+	<s:Label x="12" y="37" text="强度(max)"/>
+	<s:TextInput id="m_minStrong" x="94" y="31" change="changeInfoHandler(event)"/>
+	<mx:VRule x="298" y="0" height="100%" strokeColor="0" strokeWidth="2"/>
+</effectview:EffectUnitDataView_Abst>

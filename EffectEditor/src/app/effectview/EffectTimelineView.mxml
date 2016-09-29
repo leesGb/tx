@@ -1,0 +1,861 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:effectview="app.effectview.*"
+		 creationComplete="group1_creationCompleteHandler(event)">
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import app.Game;
+			import app.constant.MainConstant;
+			import app.effectview.data.EffectCommonData;
+			import app.effectview.data.EffectTreeVo;
+			import app.manager.ModelManager;
+			
+			import com.hmh.utils.FileHelper;
+			
+			import deltax.common.resource.Enviroment;
+			import deltax.graphic.effect.EffectManager;
+			import deltax.graphic.effect.EffectUnitType;
+			import deltax.graphic.effect.data.EffectData;
+			import deltax.graphic.effect.data.EffectGroup;
+			import deltax.graphic.effect.data.unit.*;
+			import deltax.graphic.effect.data.unit.modelmaterial.AlphaInfo;
+			import deltax.graphic.effect.data.unit.modelmaterial.BrightnessInfo;
+			import deltax.graphic.effect.data.unit.modelmaterial.MaterialFxProperties;
+			import deltax.graphic.effect.data.unit.modelmaterial.ShaderInfo;
+			import deltax.graphic.effect.data.unit.modelmaterial.UVInfo;
+			import deltax.graphic.effect.render.unit.EffectUnit;
+			import deltax.graphic.effect.render.unit.ParticleSystem;
+			import deltax.graphic.manager.IResource;
+			import deltax.graphic.manager.ResourceManager;
+			import deltax.graphic.manager.ResourceType;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.DragEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			public var effectMainView:EffectMainView;
+			public var previewEffectFun:Function;
+			
+			public static const GAP:uint = 8; 
+			
+			private var _info:Vector.<EffectUnitData>;
+			public function set info(value:Vector.<EffectUnitData>):void{				
+				this._info = value;				
+				updateData();
+				timerShaft.info = ModelManager.getInstance().curEffect;
+				coordinateId.selected = false;
+			}
+			
+			public function get info():Vector.<EffectUnitData>{
+				return this._info;
+			}
+			
+			[Bindable]
+			private var treeData:ArrayCollection=new ArrayCollection();
+			private function updateData():void{				
+				var arr:Array = [];
+				var i:int = 0;
+				var effectTreeVo:EffectTreeVo;
+				var colors:Dictionary = new Dictionary(true);
+				i=0;
+				var src:Array = treeData?treeData.source:[];
+				
+				//记录是否选择了
+				if(treeData){
+					var recordSelectList:Array = [];
+					for each(effectTreeVo in treeData){
+						recordSelectList[effectTreeVo.index] = effectTreeVo;
+					}
+				}
+				
+				for(var j:int=0;j<info.length;j++){
+					var effectUnitData:EffectUnitData = info[j];				
+					effectTreeVo = new EffectTreeVo();
+					effectTreeVo.index = i;
+					effectTreeVo.customName = effectUnitData.customName;
+					effectTreeVo.name = i + ":" + getQualifiedClassName(effectUnitData).split("::").reverse()[0];
+					effectTreeVo.data = effectUnitData;
+					effectTreeVo.effectUnit = ModelManager.getInstance().curEffect.getEffectUnit(i);										
+					effectTreeVo.effectTimelineView = this;
+					if(effectUnitData.parentTrack>-1){
+						effectTreeVo.parent = info[effectUnitData.parentTrack];						
+					}					
+					
+					//索引颜色							
+					if(effectTreeVo.data.parentTrack>-1){								
+						if(colors[""+effectTreeVo.data.parentTrack]==undefined){
+							colors[""+effectTreeVo.data.parentTrack] = Math.random()*0xFFFFFF;
+							if(arr[effectTreeVo.data.parentTrack]){
+								arr[effectTreeVo.data.parentTrack].layerColor = colors[""+effectTreeVo.data.parentTrack]; 
+							}
+						}
+						effectTreeVo.layerColor = colors[""+effectTreeVo.data.parentTrack]; 
+					}
+					
+					arr.push(effectTreeVo);
+					i++;
+				}
+				
+				if(treeData){
+					var len:int = treeData.length;					
+					for(i=0;i<len;i++){
+						effectTreeVo = arr[i];
+						if(effectTreeVo){							
+							//effectTreeVo.isRender = treeData.getItemAt(i).isRender;
+							//effectTreeVo.effectUnit.renderDisabled = !treeData.getItemAt(i).isRender;
+							for each(var vo2:EffectTreeVo in recordSelectList){
+								if(effectTreeVo.data==vo2.data){
+									effectTreeVo.isRender = vo2.isRender;
+									effectTreeVo.effectUnit.renderDisabled = !effectTreeVo.isRender;									
+									break;
+								}
+							}
+						}
+					}					
+				}
+											
+				
+				treeData = new ArrayCollection(arr);
+				
+				treeId.updateAll();
+			}
+			
+			public function updateDataParent():void{
+				for each(var effectTreeVo:EffectTreeVo in treeData){
+					if(effectTreeVo.data && effectTreeVo.data.parentTrack>0){
+						effectTreeVo.parent = info[effectTreeVo.data.parentTrack];
+					}
+				}
+			}
+			
+			protected function dragCompleteHandler(event:DragEvent):void
+			{
+				EffectCommonData.Instance.recordDatas();
+				var effectTreeVo:EffectTreeVo;
+				var result:Vector.<EffectUnitData> = new Vector.<EffectUnitData>();
+				for(var i:int=0,len:int=treeData.length;i<len;i++){
+					var tvo:EffectTreeVo = treeData.getItemAt(i) as EffectTreeVo;
+					var vo:EffectUnitData = info[tvo.index];
+					result.push(vo);
+					tvo.index = i;
+					
+				}
+				
+				//处理parentTrack索引
+				
+				
+				//赋值
+				for(i=0;i<info.length;i++){
+					info[i] = result[i];
+				}
+				
+				for each(effectTreeVo in treeData)
+				{
+					effectTreeVo.data.parentTrack = info.indexOf(effectTreeVo.parent);
+				}
+				
+				previewEffectFun();
+				updateData();
+				effectMainView.effectUnitDataView.info = null;
+			}
+			
+			protected function deleteHandler(event:MouseEvent):void
+			{
+				if(treeId.selectedItem == null){
+					Alert.show("selected item is null");
+					return;
+				}
+				EffectCommonData.Instance.recordDatas();
+				
+				var idx:int;
+				var errorStr:String = "";
+				
+				var effectUnitData:EffectUnitData
+				if(!collectNodeId.selected){//单个删除
+					for each(effectUnitData in info)
+					{
+						if(effectUnitData.parentTrack == treeId.selectedIndex)
+						{
+							errorStr += treeData.source[idx].name + ";";
+						}
+						idx++;
+					}
+					if(errorStr != ""){
+						Alert.show("存在对此引用:" + errorStr);
+						return;
+					}
+					
+					var ef:EffectUnitData = info[treeId.selectedIndex];
+					ef.destroy();
+					info.splice(treeId.selectedIndex,1);
+					for each(effectUnitData in info){
+						if(effectUnitData.parentTrack > treeId.selectedIndex){
+							effectUnitData.parentTrack--;
+						}
+						idx++;
+					}
+				}else{//关联删除
+					deleteSubEffectUnit(treeId.selectedIndex);
+//					for(var i:int=info.length-1;i>=0;i--){
+//						var effectUnitData:EffectUnitData = info[i];
+//						var aIndex:int = info.indexOf(effectUnitData);
+//						if(effectUnitData.parentTrack==treeId.selectedIndex || treeId.selectedIndex==aIndex){														
+//							//仅处理到3层
+//							
+//							//
+//							for each(var auData in info){
+//								if(auData.parentTrack > aIndex){
+//									auData.parentTrack--;
+//								}
+//							}
+//							info.splice(aIndex,1);
+//						}
+//					}
+				}
+				
+				previewEffectFun();
+				updateData();
+				effectMainView.effectUnitDataView.info = null;
+			}
+			
+			private function deleteSubEffectUnit(parentIndex:int):void{
+				var flag:Boolean = false;
+				var auData:EffectUnitData;
+				for(var j:int=info.length-1;j>parentIndex;j--){
+					var subUnitData:EffectUnitData = info[j];
+					var subIndex:int = j;
+					if(subUnitData.parentTrack==parentIndex){
+						flag = true;
+						deleteSubEffectUnit(subIndex);
+						//del currentItem
+						for each(auData in info){
+							if(auData.parentTrack > parentIndex){
+								auData.parentTrack--;
+							}
+						}
+						info.splice(parentIndex,1);
+					}
+				}
+				if(!flag){//没有任何子层
+					for each(auData in info){
+						if(auData.parentTrack > parentIndex){
+							auData.parentTrack--;
+						}
+					}
+					info.splice(parentIndex,1);
+				}
+			}
+			
+			protected function allRendabledChange(event:Event):void
+			{
+				//treeId.selectAll = true;
+				//ModelManager.getInstance().curEffect.disableEffectUnit(treeId.selectedIndex,false);			
+				
+				for each(var obj:EffectTreeVo in treeData.source){
+					obj.effectUnit.renderDisabled = false;
+					obj.isRender = !obj.effectUnit.renderDisabled;
+				}
+				treeId.dataProvider = treeId.dataProvider;				
+				//treeId.selectAll = true;
+			}
+			
+			protected function allDisrendabledAllChange(event:Event):void
+			{
+				for each(var obj:EffectTreeVo in treeData.source){
+					EffectUnit(obj.effectUnit).renderDisabled = true;
+					obj.isRender = !obj.effectUnit.renderDisabled;					
+				}
+				treeId.dataProvider = treeId.dataProvider;				
+				//treeId.selectAll = false;
+			}		
+			
+			protected function createNewEffectUnitHandler(event:MouseEvent):void
+			{
+				if(info == null)
+				{
+					Alert.show("没有选择要编辑的特效");
+					return;
+				}
+				
+				EffectCommonData.Instance.recordDatas();
+				var createEffectUnitView:Effect_CreateView = PopUpManager.createPopUp(MainConstant.mainView,Effect_CreateView,true) as Effect_CreateView;
+				PopUpManager.centerPopUp(createEffectUnitView);				
+				
+				createEffectUnitView.okFun = function(createType:int):void{
+					var newUnit:EffectUnitData = EffectUnitData.createInstance(createType);
+					newUnit.effectData = effectMainView.effectUnitDataView.effectData;
+					newUnit.m_colorKeys = new Vector.<Number>();
+					newUnit.m_colorKeys.push(0);
+					newUnit.m_colorKeys.push(1);
+					newUnit.m_colors = new Vector.<uint>();
+					newUnit.m_colors.push(0xFFFFFFFF);
+					newUnit.m_colors.push(0xFFFFFFFF);					
+					newUnit.m_offsetKeys = new Vector.<Number>();
+					newUnit.m_offsetKeys.push(0);
+					newUnit.m_offsets = new Vector.<Vector3D>();
+					newUnit.m_offsets.push(new Vector3D());
+					newUnit.m_scaleKeys = new Vector.<Number>();
+					newUnit.m_scaleKeys.push(0);
+					newUnit.m_scaleKeys.push(1);
+					newUnit.m_scales = new Vector.<uint>();
+					newUnit.m_scales.push(255);
+					newUnit.m_scales.push(255);					
+					newUnit.m_textureKeys = new Vector.<Number>();
+					newUnit.m_textureKeys.push(0);
+					newUnit.m_textureNames = new Vector.<String>();
+					newUnit.m_textureNames.push(Enviroment.ResourceRootPath + "fx/tex/defaulttexturebmd.jpg");
+					
+					newUnit.attachName = "";
+					newUnit.customName = "";			
+					newUnit.userClassName = "";
+					switch(newUnit.type){
+						case EffectUnitType.PARTICLE_SYSTEM:
+							var particleSystemData:ParticleSystemData = ParticleSystemData(newUnit);
+							particleSystemData.m_acceleration = new Vector3D(0,20,0);
+							particleSystemData.m_emissionPlan = new Vector3D(0,0,0);
+							particleSystemData.m_minVelocity = new Vector3D(0,5,0);
+							particleSystemData.m_maxVelocity = new Vector3D(0,20,0);
+							particleSystemData.m_acceleration = new Vector3D(0,2,0);
+							particleSystemData.m_particleCountPerEmission = 2;
+							particleSystemData.m_minEmissionInterval = 1000;
+							particleSystemData.m_maxEmissionInterval = 2000;
+							particleSystemData.m_minSize = 1;
+							particleSystemData.m_maxSize = 10;
+							particleSystemData.m_minAngularVelocity = 0;
+							particleSystemData.m_maxAngularVelocity = 0;				
+							particleSystemData.m_minLifeTime = 1000;
+							particleSystemData.m_maxLifeTime = 1000;
+							particleSystemData.m_minRadius = 0;
+							particleSystemData.m_maxRadius = 25;				
+							particleSystemData.m_longShortRadius = 1;
+							particleSystemData.m_cornerDivision = 3;		
+							particleSystemData.m_velocityPercent = 0;
+							particleSystemData.m_widthRatio = 1;
+							particleSystemData.m_zBias = 0;
+							particleSystemData.m_longShortDRadius = 0;
+							particleSystemData.m_acceleration = new Vector3D();				
+							particleSystemData.m_blendMode = 0;
+							particleSystemData.m_zTestMode = 2;						
+							break;
+						case EffectUnitType.BILLBOARD:
+							var billBoardData:BillboardData = BillboardData(newUnit);
+							billBoardData.m_rotateAxis = new Vector3D();
+							billBoardData.m_normal = new Vector3D(0,0,1);
+							billBoardData.m_matrixNormal = new Matrix3D();
+							billBoardData.m_startAngle = 0;
+							billBoardData.m_widthRatio = 1;
+							billBoardData.m_minSize = 0;
+							billBoardData.m_maxSize = 10;
+							billBoardData.m_zBias = 0;
+							billBoardData.m_enableLight = false;
+							billBoardData.m_synRotate = true;
+							billBoardData.m_bindOnlyStart = false;
+							break;
+						case EffectUnitType.POLYGON_TRAIL:
+							var polygonTrail:PolygonTrailData = PolygonTrailData(newUnit);
+							polygonTrail.m_rotate = new Vector3D(1,0,0);
+							polygonTrail.m_minTrailWidth = 1;
+							polygonTrail.m_maxTrailWidth = 2;
+							polygonTrail.m_blendMode = 0;
+							polygonTrail.m_zTestMode = 0;
+							polygonTrail.m_simulateType = 0;
+							break;
+						case EffectUnitType.CAMERA_SHAKE:
+							var cameraShakeData:CameraShakeData = CameraShakeData(newUnit);
+							cameraShakeData.m_frequency = 1000;
+							cameraShakeData.m_strength = 1;
+							cameraShakeData.m_minRadius = 1000;
+							cameraShakeData.m_maxRadius = 2000;
+							cameraShakeData.m_shakeType = 0;
+							break;
+						case EffectUnitType.MODEL_CONSOLE:
+							var modelConsoleData:ModelConsoleData = ModelConsoleData(newUnit);
+							modelConsoleData.m_linkedParentSkeletal = "";
+							modelConsoleData.m_meshName = "";
+							modelConsoleData.m_aniGroupName = "";
+							modelConsoleData.m_rotate = new Vector3D();
+							modelConsoleData.m_startAngle = 0;
+							modelConsoleData.m_minScale = 1;
+							modelConsoleData.m_maxScale = 1;
+							for(var i:int = 0;i<ModelConsoleData.MAX_PIECECLASS_COUNT;i++){
+								modelConsoleData.m_pieceClassIndice[i] = 0;
+								modelConsoleData.m_pieceMaterialIndice[i] = 1;
+							}
+							break;
+						case EffectUnitType.MODEL_MATERIAL:
+							var modelMaterialData:ModelMaterialData = ModelMaterialData(newUnit);
+							modelMaterialData.m_properties = new MaterialFxProperties();
+							modelMaterialData.m_properties.alphaInfo = new AlphaInfo();
+							modelMaterialData.m_properties.alphaInfo.alphaTest = 0;
+							modelMaterialData.m_properties.alphaInfo.blendEnable = 0;
+							modelMaterialData.m_properties.alphaInfo.destBlend = 6;
+							modelMaterialData.m_properties.alphaInfo.srcBlend = 5;
+							modelMaterialData.m_properties.shaderInfo = new ShaderInfo();
+							modelMaterialData.m_properties.uvInfo = new UVInfo();
+							modelMaterialData.m_properties.uvInfo.minScale = 1;
+							modelMaterialData.m_properties.uvInfo.maxScale = 1;							
+							modelMaterialData.m_brightnessInfo = new BrightnessInfo();
+							modelMaterialData.m_applyClasses = new Vector.<String>();
+							break;
+						case EffectUnitType.SCREEN_FILTER:
+							var screenFilterData:ScreenFilterData = ScreenFilterData(newUnit);
+							screenFilterData.m_xScale = 0;
+							screenFilterData.m_yScale = 0;
+							screenFilterData.m_zScale = 0;
+							screenFilterData.m_darknessAttenuation = 0;
+							screenFilterData.m_brightnessAttenuation = 0;
+							break;
+						case EffectUnitType.NULL:
+							var nullEffectData:NullEffectData = NullEffectData(newUnit);
+							nullEffectData.m_rotate = new Vector3D();
+							nullEffectData.m_startAngle = 0;
+							nullEffectData.m_syncRotate = true;
+							nullEffectData.m_followSpeed = true;
+							break;
+						case EffectUnitType.DYNAMIC_LIGHT:
+							var dynamicLight:DynamicLightData  = DynamicLightData(newUnit);
+							dynamicLight.m_range = 0;
+							dynamicLight.m_minStrong = 0;
+							dynamicLight.m_maxStrong = 0;
+							break;
+						case EffectUnitType.SOUND:
+							var soundFxData:SoundFXData = SoundFXData(newUnit);
+							soundFxData.m_audioFileName = "";
+							soundFxData.m_minDistance = 0;
+							soundFxData.m_maxDistance = 0;
+							soundFxData.m_playRatio = 0;
+							break;
+						case EffectUnitType.MODEL_ANIMATION:
+							var modelAnimation:ModelAnimationData = ModelAnimationData(newUnit);
+							break;
+						case EffectUnitType.POLYGON_CHAIN:
+							var polygonChainData:PolygonChainData = PolygonChainData(newUnit);
+							polygonChainData.m_startAngle = 0;
+							polygonChainData.m_rotateSpeed = 0;
+							polygonChainData.m_chainWidth = 30;
+							polygonChainData.m_chainCount = 3;
+							polygonChainData.m_chainNodeCount = 8;
+							polygonChainData.m_chainNodeMinScope = 3;
+							polygonChainData.m_chainNodeMaxScope = 20;
+							polygonChainData.m_uvSpeed = 0;
+							polygonChainData.m_fitScale = 0;
+							polygonChainData.m_maxBindRange = 1000;
+							polygonChainData.m_nextBindName = "";
+							polygonChainData.m_ditheringInterval = 1000;
+							polygonChainData.m_sinCosInfo = new Vector.<Number>((polygonChainData.m_chainCount * 2));
+							break;
+					}
+					
+					info.push(newUnit);
+					
+					previewEffectFun();
+					
+					updateData();
+					effectMainView.effectUnitDataView.info = null;
+				}
+			}
+			
+			protected function selectHandler(event:MouseEvent):void
+			{
+				if(treeId.selectedItem == null)return;
+//				if(effectMainView.effectUnitDataView.info == treeId.selectedItem.data)return;
+				var eud:EffectUnitData=treeId.selectedItem.data;
+				effectMainView.effectUnitDataView.info = treeId.selectedItem.data as EffectUnitData;
+				//
+				effectMainView.setViewVisible(2);
+				if(ModelTimelineView.instance.bindSkeletal)
+					ModelTimelineView.instance.bindSkeletal.enabled = true;
+				//坐标显示
+				for(var i:int=0;i<treeData.length;i++)
+				{
+					var vo:EffectTreeVo = treeData[i];					
+					if(vo && vo.effectUnit)
+					{
+						if(i==treeId.selectedIndex)
+						{
+							vo.effectUnit.showCoordinate = true;
+						}else
+						{
+							vo.effectUnit.showCoordinate = false;
+						}
+					}
+				}
+				//var ro:RenderObject = CoordObectManager.instance.renderObject;
+//				var eu:EffectUnit = ModelManager.getInstance().curEffect.getEffectUnit(info.indexOf(eud));
+//				ro.visible=true;
+//				ro.x=eu.worldMatrix.position.x;
+//				ro.y=eu.worldMatrix.position.y;
+//				ro.z=eu.worldMatrix.position.z;
+			}		
+			
+			public function reUpdateInfoView():void{
+				if(treeId.selectedItem)
+					effectMainView.effectUnitDataView.info = treeId.selectedItem.data as EffectUnitData;
+			}					
+						
+			private static var copyUnitData:EffectUnitData;
+			private static var copyUnitDataTree:Vector.<EffectUnitData>;
+			protected function copyUDataId_clickHandler(event:MouseEvent):void
+			{
+				if(treeId.selectedItem!=null){
+					var selectVo:EffectTreeVo = treeId.selectedItem as EffectTreeVo;
+					var selectUData:EffectUnitData = selectVo.data;
+					copyUnitData = selectUData;
+					copyUnitDataTree = new Vector.<EffectUnitData>();
+					copyUnitDataTree.push(copyUnitData);
+					var copyIndexs:Array = [selectVo.index];
+					var newIndexs:Array = [];		
+					if(collectNodeId.selected){
+						var childList:Array = getAllChildren(selectVo.index);																					
+						for(var j:int=0;j<childList.length;j++){						
+							copyUnitDataTree.push(info[childList[j]]);
+						}
+						
+						//获取子树局部索引
+						for(j=0;j<copyUnitDataTree.length;j++){
+							var curData:EffectUnitData = copyUnitDataTree[j];
+							if(curData.parentTrack>-1){
+								var parent:EffectUnitData = info[curData.parentTrack]; 
+								newIndexs[j] = copyUnitDataTree.indexOf(parent);							
+							}else{
+								newIndexs[j] = -1;
+							}
+						}
+					}
+					
+					//建立新的子树
+					for(j=0;j<copyUnitDataTree.length;j++){											
+						var copyTmp:EffectUnitData = EffectUnitData.createInstance(copyUnitDataTree[j].type);
+						copyTmp.copyFrom(copyUnitDataTree[j]);
+						copyUnitDataTree[j] = copyTmp;
+						copyTmp.parentTrack = newIndexs[j];
+					}
+					
+				
+				}
+				//trace(copyUnitDataTree);
+			}
+			
+			private function getAllChildren(selectIndex:int):Array
+			{
+				var tmp:Array = [];
+				for(var i:int=0;i<info.length;i++){
+					var adata:EffectUnitData = info[i];
+					if(adata.parentTrack==selectIndex){
+						tmp.push(i);
+						var tmp2:Array = getAllChildren(i);
+						tmp = tmp.concat(tmp2);
+					}
+				}
+				return tmp;
+			}
+			
+			protected function pasteUDataId_clickHandler(event:MouseEvent):void
+			{
+				EffectCommonData.Instance.recordDatas();
+				if(copyUnitData){					
+					var newPasteList:Vector.<EffectUnitData> =  new Vector.<EffectUnitData>();
+					for(var j:int=0;j<copyUnitDataTree.length;j++){
+						var copyTmp:EffectUnitData = EffectUnitData.createInstance(copyUnitDataTree[j].type);
+						copyTmp.copyFrom(copyUnitDataTree[j]);
+						newPasteList.push(copyTmp);
+					}
+					
+					for(var i:int=0;i<newPasteList.length;i++){
+						_info.splice(treeId.selectedIndex+1+i,0,newPasteList[i]);
+					}
+					
+					//更新索引值
+					for(i=0;i<newPasteList.length;i++){//粘贴树的索引更新
+						if(i==0){
+							newPasteList[i].parentTrack = -1;
+						}else{
+							newPasteList[i].parentTrack = newPasteList[i].parentTrack + (treeId.selectedIndex+1);
+						}
+					}
+					for(i=treeId.selectedIndex+1+newPasteList.length;i<info.length;i++){
+						if(info[i].parentTrack>=treeId.selectedIndex){
+							info[i].parentTrack += newPasteList.length;
+						}
+					}
+					
+					previewEffectFun();
+					updateData();
+					effectMainView.effectUnitDataView.info = null;
+				}
+			}
+			
+			public static var instance:EffectTimelineView;
+			protected function group1_creationCompleteHandler(event:FlexEvent):void
+			{
+				instance = this;
+			}
+			
+			protected function playStateBtn_clickHandler(event:MouseEvent):void
+			{
+				switch(event.currentTarget)
+				{
+					case playBtn:
+					{
+						EffectManager.instance.renderState = EffectManager.PLAY;
+						if(timerShaft.info)
+						{
+							timerShaft.effectAttachModel(0);
+						}
+						break;
+					}						
+					case pauseBtn:
+					{
+						EffectManager.instance.renderState = EffectManager.PAUSE;
+						if(timerShaft.info)
+						{
+							timerShaft.effectAttachModel(1);
+						}
+						break;
+					}
+				}
+			}
+			
+			protected function particleNumState_enterFrameHandler(event:Event):void
+			{
+				particleNumState.text = ""+ParticleSystem.totalParticleCount;
+			}
+			
+			protected function timeOffsetId_changeHandler(event:Event):void
+			{
+				if((event as KeyboardEvent).keyCode!=Keyboard.ENTER)return;
+				if(collectNodeId.selected){					
+					EffectCommonData.Instance.recordDatas();
+					var toPos:Number = Number(timeOffsetId.text);
+					if(!isNaN(toPos) && treeId.selectedIndex!=-1){						
+						var list:Array= getAllChildren(treeId.selectedIndex);
+						list.unshift(treeId.selectedIndex);
+						for each(var index:int in list){
+							var euData:EffectUnitData = info[index]; 
+							if(euData)
+								euData.startTime += toPos;
+						}
+						treeId.updateAll();
+					}
+				}
+			}
+			
+			protected function coordinateId_clickHandler(event:MouseEvent):void
+			{
+				if(ModelManager.getInstance().coordRenderObject)
+					ModelManager.getInstance().coordRenderObject.visible = (coordinateId.selected);
+			}
+			
+//			private var arrListss:Array = [];
+//			private var uintStr:String="";
+//			private var texStr:String="";
+//			protected function allTransform_clickHandler(event:MouseEvent):void
+//			{
+//				readXml();
+//				return;
+//				uintStr = "<root>"+"\n";
+//				texStr = "<root>"+"\n";
+//				arrListss=[];
+//				var file:File = new File(Enviroment.ResourceRootPath + "/fx/cfg");
+//				checkFileArr(file,arrListss);
+//				loadObject(arrListss.shift());
+//			}
+//			
+//			private function loadObject(obj:Object):void
+//			{
+//				ResourceManager.instance.getResource(obj.path, ResourceType.EFFECT_GROUP, onEffectGroupLoad,EffectGroup,true);
+//			}
+//			
+//			private function onEffectGroupLoad(resource:IResource,isSuccess:Boolean):void
+//			{
+//				var eg:EffectGroup = resource as EffectGroup;
+//				for each(var effectData:EffectData in eg.m_effectDatas)
+//				{
+//					if(effectData.unitCount>30)
+//					{
+////						trace("===================0",effectData.effectGroup.name,"fullName::::",effectData.fullName,"uintCount:::::",effectData.unitCount);
+//						uintStr+="<item"+" "+"effectName="+"'"+effectData.effectGroup.name+"'"+" "+"fullName="+"'"+effectData.fullName+"'"+" "+"count="+"'"+effectData.unitCount+"'"+"/>"+"\n"
+////						 "EffectName::::("+effectData.effectGroup.name+")  "+"fullName::::("+effectData.fullName+")  "+"uintCount:::::("+effectData.unitCount+")\n";
+//					}
+//					if(effectData.texNameCount>20)
+//					{
+//						texStr+="<item"+" "+"effectName="+"'"+effectData.effectGroup.name+"'"+" "+"fullName="+"'"+effectData.fullName+"'"+" "+"count="+"'"+effectData.texNameCount+"'"+"/>"+"\n"
+////						texStr+= "EffectName::::("+effectData.effectGroup.name+")  "+"fullName::::("+effectData.fullName+")  "+"texcount:::::("+effectData.texNameCount+")\n";
+////						trace("===================1",effectData.effectGroup.name,"fullName::::",effectData.fullName,"texcount::::",effectData.texNameCount);
+//					}
+//				}
+//				eg.dispose();
+//				//
+//				if(arrListss.length>0)
+//				{
+//					loadObject(arrListss.shift());
+//				}else
+//				{
+//					uintStr += "\n"+"</root>";
+//					texStr += "\n"+"</root>";
+//					trace("=============================转换完成");
+//					var file1:File = new File(Enviroment.ResourceRootPath+"uintStr.xml");
+//					FileHelper.saveStringToFile(uintStr,file1);
+//					//
+////					trace("========",texStr);
+//					var file2:File = new File(Enviroment.ResourceRootPath+"texStr.xml");
+//					FileHelper.saveStringToFile(texStr,file2);
+//					//
+//					readXml();
+//				}
+//			}
+//			
+//			private function readXml():void
+//			{
+//				var file2:File = new File(Enviroment.ResourceRootPath+"texStr.xml");
+//				var xml:XML = XML(FileHelper.readFileToStr(file2));
+//				var item:XML;
+//				var result:Array=[];
+//				for each(item in xml.item)
+//				{
+//					result[result.length] = item;
+//				}
+//				result.sort(compare);
+//				var rStr:String="<root>"+"\n";
+//				var ss:XML;
+//				for(var i:uint = 0;i<result.length;i++)
+//				{
+//					ss = XML(result[i]);
+//					rStr+="<item"+" "+"count="+"'"+ss.@count+"'"+" "+"effectName="+"'"+ss.@effectName+"'"+" "+"fullName="+"'"+ss.@fullName+"'"+"/>"+"\n";
+//				}
+//				rStr+="\n"+"</root>";
+//				FileHelper.saveStringToFile(rStr,file2);
+//				//
+//				var file1:File = new File(Enviroment.ResourceRootPath+"uintStr.xml");
+//				var xml2:XML = XML(FileHelper.readFileToStr(file1));
+//				var item1:XML;
+//				var result2:Array=[];
+//				for each(item1 in xml2.item)
+//				{
+//					result2[result2.length] = item1;
+//				}
+//				result2.sort(compare);
+//				var rStr2:String="<root>"+"\n"
+//				for(var j:uint = 0;j<result2.length;j++)
+//				{
+//					ss = XML(result2[j]);
+//					rStr2+="<item"+" "+"count="+"'"+ss.@count+"'"+" "+"effectName="+"'"+ss.@effectName+"'"+" "+"fullName="+"'"+ss.@fullName+"'"+"/>"+"\n";
+//				}
+//				rStr2+="\n"+"</root>";
+//				FileHelper.saveStringToFile(rStr2,file1);
+//			}
+//			
+//			private function compare(x1:XML,x2:XML):int
+//			{
+//				var c1:uint = x1.@count;
+//				var c2:uint = x2.@count;
+//				if(c1>c2)
+//				{
+//					return -1;
+//				}else if(c1<c2)
+//				{
+//					return 1;
+//				}
+//				return 0;
+//			}
+//			
+//			private function checkFileArr(parentFile:File,arr:Array):void
+//			{
+//				if(parentFile.isDirectory)
+//				{
+//					for each(var file:File in parentFile.getDirectoryListing())
+//					{
+//						if(file.name.indexOf(".eft")>-1)
+//						{
+//							trace("filename==================",file.nativePath);
+//							var obj:Object = new Object();
+//							arr.push(obj);
+//							obj.name = file.name;
+//							obj.path = file.nativePath;
+//							obj.data = file;
+//						}else
+//						{
+//							checkFileArr(file,arr);
+//						}
+//					}
+//				}
+//			}
+			
+			protected function checkbox1_clickHandler(event:MouseEvent):void
+			{
+				if(Game.instance.renderer)
+				{
+					Game.instance.renderer.m_ignoreTerrainRender = hideTerrain.selected;
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<s:Scroller height="100%" width="100%" id="ss">
+		<s:Group width="100%" height="100%">
+			<s:BorderContainer width="{ss.width+1}" height="100%" backgroundAlpha="0" borderVisible="false">
+				<effectview:EffectUnitDataTree id="treeId" x="0" y="82" width="100%" height="100%" click="selectHandler(event)" dataProvider="{treeData}" 
+											   itemRenderer="app.effectview.renderer.EffectUnitListRender" dragMoveEnabled="true" dragEnabled="true" dropEnabled="true" 
+											   dragComplete="dragCompleteHandler(event)" />
+				<s:Button x="66" y="34" width="59" label="删除" click="deleteHandler(event)"/>
+				<s:Button id="allRendabledId" x="282" y="34" width="46" label="全选" click="allRendabledChange(event)"/>
+				<s:Button x="2" y="34" width="56" label="创建" click="createNewEffectUnitHandler(event)"/>
+				<s:Button id="allDisrendabledId" x="336" y="34" width="46" label="反选" click="allDisrendabledAllChange(event)"/>
+				<s:Button id="copyUDataId" x="388" y="33" width="46" label="复制" click="copyUDataId_clickHandler(event)"/>
+				<s:Button id="pasteUDataId" x="442" y="33" width="46" label="粘贴" click="pasteUDataId_clickHandler(event)"/>
+				<s:CheckBox id="collectNodeId" x="92" y="3" label="关联子层特效操作"/>
+				<s:CheckBox id="coordinateId" x="4" y="3" label="显示坐标轴" selected="false" click="coordinateId_clickHandler(event)"/>
+				<s:Button id="playBtn" x="132" y="33" label="播放" click="playStateBtn_clickHandler(event)" />
+				<s:Button id="pauseBtn" x="204" y="33" label="暂停" click="playStateBtn_clickHandler(event)"/>
+				<s:Label x="304" y="3" width="63" height="21" text="剩余粒子数:" verticalAlign="middle"/>
+				<s:Label x="428" y="3" width="63" height="21" text="时间偏移:" verticalAlign="middle"/>
+				<s:Label id="particleNumState" x="371" y="3" width="49" height="21"
+						 enterFrame="particleNumState_enterFrameHandler(event)" verticalAlign="middle"/>
+				<s:TextInput id="timeOffsetId" x="485" y="2" width="45"
+							 keyDown="timeOffsetId_changeHandler(event)"/>
+				<effectview:TimerShaftView id="timerShaft" x="540" y="2" width="266" height="28"/>
+				<s:BorderContainer x="222" y="67" width="100%" height="13" backgroundColor="#999292"
+								   borderVisible="false">
+					<s:Label x="0" y="2" color="#FF0000" text="0"/>
+					<s:Label x="34" y="2" color="#FF0000" text="5"/>
+					<s:Label x="70" y="2" color="#FF0000" text="10"/>
+					<s:Label x="110" y="2" color="#FF0000" text="15"/>
+					<s:Label x="150" y="2" color="#FF0000" text="20"/>
+					<s:Label x="190" y="2" color="#FF0000" text="25"/>
+					<s:Label x="228" y="2" color="#FF0000" text="30"/>
+					<s:Label x="268" y="2" color="#FF0000" text="35"/>
+					<s:Label x="308" y="2" color="#FF0000" text="40"/>
+					<s:Label x="348" y="2" color="#FF0000" text="45"/>
+					<s:Label x="388" y="2" color="#FF0000" text="50"/>
+					<s:Label x="429" y="2" color="#FF0000" text="55"/>
+					<s:Label x="468" y="2" color="#FF0000" text="60"/>
+					<s:Label x="509" y="2" color="#FF0000" text="65"/>
+					<s:Label x="548" y="2" color="#FF0000" text="70"/>
+					<s:Label x="587" y="2" color="#FF0000" text="75"/>
+					<s:Label x="627" y="2" color="#FF0000" text="80"/>
+					<s:Label x="667" y="2" color="#FF0000" text="85"/>
+					<s:Label x="707" y="2" color="#FF0000" text="90"/>
+					<s:Label x="748" y="2" color="#FF0000" text="95"/>
+					<s:Label x="783" y="2" color="#FF0000" text="100"/>
+					<s:Label x="824" y="2" color="#FF0000" text="105"/>
+					<s:Label x="863" y="2" color="#FF0000" text="110"/>
+					<s:Label x="904" y="2" color="#FF0000" text="115"/>
+					<s:Label x="946" y="2" color="#FF0000" text="120"/>
+				</s:BorderContainer>
+				<s:Label x="5" y="68" text="每格时间"/>
+				<s:Label id="intervalTime" x="58" y="70" color="#FF0000" text="0"/>
+				<s:CheckBox x="216" y="3" label="隐藏地表" click="checkbox1_clickHandler(event)" id="hideTerrain"/>
+				<!--<s:Button id="allTransform" x="647" y="3" width="438" height="39" label="转换所有"
+				click="allTransform_clickHandler(event)" enabled="false" visible="false"/>-->
+			</s:BorderContainer>
+		</s:Group>
+	</s:Scroller>
+	
+</s:Group>

@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<effectview:EffectUnitDataView_Abst xmlns:fx="http://ns.adobe.com/mxml/2009" 
+									xmlns:s="library://ns.adobe.com/flex/spark" 
+									xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:effectview="app.effectview.*"
+		 width="828" height="684" initialize="effectunitdataview_abst1_initializeHandler(event)">
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+		<s:RadioButtonGroup id="m_simulateType" itemClick="changeInfoHandler(event)"/>
+		<s:RadioButtonGroup id="m_strip" itemClick="changeInfoHandler(event)"/>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import deltax.graphic.effect.data.unit.EffectUnitData;
+			import deltax.graphic.effect.data.unit.PolygonTrailData;
+			import deltax.graphic.effect.data.unit.polytrail.PolyTrailSimulateType;
+			import deltax.graphic.effect.data.unit.polytrail.PolyTrailType;
+			
+			import app.effectview.data.EffectTypeMode;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			
+			import spark.components.RadioButtonGroup;
+			import spark.events.IndexChangeEvent;
+			
+			public function get theInfo():PolygonTrailData{
+				return this._info as PolygonTrailData;
+			}			
+			override public function set info(value:EffectUnitData):void{
+				super.info = value;
+				baseId.info = value;
+				
+				updateData();
+			}
+			private function updateData():void{
+				this.m_singleSide.selected = theInfo.m_singleSide;
+				this.m_strip.selectedValue = theInfo.m_strip.toString();
+				this.m_widthAsTextureU.selected = theInfo.m_widthAsTextureU;
+				this.m_invertTexU.selected = theInfo.m_invertTexU;
+				this.m_invertTexV.selected = theInfo.m_invertTexV;
+				this.m_rotate_x.text = theInfo.m_rotate.x.toString();
+				this.m_rotate_y.text = theInfo.m_rotate.y.toString();
+				this.m_rotate_z.text = theInfo.m_rotate.z.toString();				
+				this.m_minTrailWidth.text = theInfo.m_minTrailWidth.toString();
+				this.m_maxTrailWidth.text = theInfo.m_maxTrailWidth.toString();
+				this.m_unitLifeTime.text = theInfo.m_unitLifeTime.toString();
+				this.m_blendMode.selectedIndex = theInfo.m_blendMode;
+				this.m_zTestMode.selectedIndex = theInfo.m_zTestMode;
+				this.m_enableLight.selected = theInfo.m_enableLight;
+				this.m_interpolate.text = theInfo.m_interpolate.toString();
+				this.m_parentParam.text = theInfo.m_parentParam.toString();
+				this.m_simulateType.selectedValue = theInfo.m_simulateType.toString();
+			}
+			
+			protected function changeInfoHandler(event:Event):void
+			{
+				theInfo.m_singleSide = m_singleSide.selected;
+				theInfo.m_strip = uint(this.m_strip.selectedValue);
+				theInfo.m_widthAsTextureU = this.m_widthAsTextureU.selected;
+				theInfo.m_invertTexU = this.m_invertTexU.selected;
+				theInfo.m_invertTexV = this.m_invertTexV.selected;				
+				theInfo.m_rotate.x = Number(this.m_rotate_x.text);
+				theInfo.m_rotate.y = Number(this.m_rotate_y.text);
+				theInfo.m_rotate.z = Number(this.m_rotate_z.text);	
+				theInfo.m_minTrailWidth = Number(this.m_minTrailWidth.text);
+				theInfo.m_maxTrailWidth = Number(this.m_maxTrailWidth.text);
+				theInfo.m_unitLifeTime = uint(this.m_unitLifeTime.text);
+				theInfo.m_blendMode = this.m_blendMode.selectedIndex;
+				theInfo.m_zTestMode = this.m_zTestMode.selectedIndex;
+				theInfo.m_enableLight = this.m_enableLight.selected;	
+				theInfo.m_interpolate = Number(this.m_interpolate.text);
+				theInfo.m_parentParam = uint(this.m_parentParam.text);
+				theInfo.m_simulateType = uint(this.m_simulateType.selectedValue);
+				
+//				trace(theInfo.m_singleSide);
+//				trace(theInfo.m_strip);
+//				trace(theInfo.m_widthAsTextureU);
+//				trace(theInfo.m_invertTexU);
+//				trace(theInfo.m_invertTexV);				
+//				trace(theInfo.m_rotate.x);
+//				trace(theInfo.m_rotate.y);
+//				trace(theInfo.m_rotate.z);	
+//				trace(theInfo.m_minTrailWidth);
+//				trace(theInfo.m_maxTrailWidth);
+//				trace(theInfo.m_unitLifeTime);
+//				trace(theInfo.m_blendMode);
+//				trace(theInfo.m_zTestMode);
+//				trace(theInfo.m_enableLight);	
+//				trace(theInfo.m_interpolate);
+//				trace(theInfo.m_parentParam);
+//				trace(theInfo.m_simulateType);
+			}
+			
+			protected function effectunitdataview_abst1_creationCompleteHandler(event:FlexEvent):void
+			{
+				
+			}
+			
+			protected function effectunitdataview_abst1_initializeHandler(event:FlexEvent):void
+			{
+				m_blendMode.dataProvider = new ArrayCollection(EffectTypeMode.BlendModes);
+				m_zTestMode.dataProvider = new ArrayCollection(EffectTypeMode.DepthTestModes);
+			}
+			
+		]]>
+	</fx:Script>
+	<effectview:EffectUnitDataView_Base id="baseId" x="300" y="0">
+	</effectview:EffectUnitDataView_Base>
+	<s:CheckBox x="10" y="218" label="m_singleSide" id="m_singleSide" change="changeInfoHandler(event)"/>	
+	<s:Label x="9" y="14" text="m_strip"/>
+	<s:Label x="9" y="38" text="旋转"/>
+	<s:CheckBox x="10" y="242" label="m_widthAsTextureU" id="m_widthAsTextureU" change="changeInfoHandler(event)"/>
+	<s:CheckBox x="10" y="268" label="m_invertTexU" id="m_invertTexU" change="changeInfoHandler(event)"/>
+	<s:CheckBox x="10" y="294" label="m_invertTexV" id="m_invertTexV" change="changeInfoHandler(event)"/>	
+	<s:Label x="10" y="146" text="轨迹宽度(min)"/>
+	<s:TextInput id="m_minTrailWidth" x="123" y="141" change="changeInfoHandler(event)"/>
+	<s:Label x="9" y="172" text="轨迹宽度(max)"/>
+	<s:TextInput id="m_maxTrailWidth" x="122" y="167" change="changeInfoHandler(event)"/>
+	<s:Label x="9" y="198" text="生存期"/>
+	<s:TextInput id="m_unitLifeTime" x="122" y="193" change="changeInfoHandler(event)"/>
+	<s:Label x="12" y="331" text="m_blendMode"/>
+	<s:Label x="11" y="357" text="m_zTestMode"/>
+	<s:Label x="11" y="442" text="m_interpolate"/>
+	<s:TextInput id="m_interpolate" x="124" y="437" change="changeInfoHandler(event)" enabled="true"/>
+	<s:Label x="11" y="467" text="m_parentParam"/>
+	<s:TextInput id="m_parentParam" x="124" y="462" change="changeInfoHandler(event)" enabled="false"/>
+	<s:Label x="10" y="410" text="m_simulateType"/>
+	<s:ComboBox id="m_blendMode" x="96" y="325" width="154" change="changeInfoHandler(event)"/>
+	<s:ComboBox id="m_zTestMode" x="96" y="353" width="154" change="changeInfoHandler(event)"/>
+	<s:TextInput id="m_rotate_x" x="9" y="55" width="100" change="changeInfoHandler(event)"/>
+	<s:TextInput id="m_rotate_y" x="10" y="85" width="100" change="changeInfoHandler(event)"/>
+	<s:TextInput id="m_rotate_z" x="10" y="115" width="100" change="changeInfoHandler(event)"/>
+	<s:CheckBox x="10" y="377" label="m_enableLight" id="m_enableLight"/>
+	<s:RadioButton x="124" y="406" label="CIRCLE" group="{m_simulateType}" value="0"/>
+	<s:RadioButton x="198" y="406" label="CURVE" group="{m_simulateType}" value="1"/>
+	<s:RadioButton x="70" y="10" label="BLOCK" value="0" group="{m_strip}"/>
+	<s:RadioButton x="220" y="10" label="TRAIL" value="1" group="{m_strip}" visible="false"/>
+	<s:RadioButton x="133" y="10" label="STRETCH" value="2" group="{m_strip}"/>	
+	<mx:VRule x="299" y="0" height="100%" strokeColor="0" strokeWidth="2"/>
+</effectview:EffectUnitDataView_Abst>

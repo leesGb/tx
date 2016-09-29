@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:MXItemRenderer  xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="true" height="30" width="1200" dataChange="mxitemrenderer1_dataChangeHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import app.effectview.EffectTimelineView;
+			import deltax.graphic.effect.data.unit.EffectUnitData;
+			import deltax.graphic.effect.render.unit.EffectUnit;
+			
+			import mx.core.UIComponent;
+			import mx.events.FlexEvent;
+			
+			import spark.events.TextOperationEvent;
+			
+			private var timeSprite:UIComponent;
+			private var timeGap:UIComponent;
+			private const GAP:int = 7;
+			protected function renderId_changeHandler(event:Event):void
+			{
+				EffectUnit(data.effectUnit).renderDisabled = !renderId.selected;
+				renderId.selected = !renderId.selected;
+			}
+			
+//			public function set isRender(value:Boolean):void{
+//				EffectUnit(data.effectUnit).renderDisabled = !value;	
+//				renderId.selected = value
+//			}
+			
+			private function get unitData():EffectUnitData{
+				return data?data.data as EffectUnitData:null;
+			}
+			
+			public function updateTimeRange():void
+			{
+				if(timeSprite == null){
+					timeSprite = new UIComponent();
+					timeSprite.buttonMode = true;
+					timeSprite.addEventListener(MouseEvent.MOUSE_DOWN,mouseDownHandler);
+					timeSprite.addEventListener(MouseEvent.MOUSE_UP,mouseUpHandler);	
+					timeSprite.addEventListener(MouseEvent.MOUSE_OUT,mouseUpHandler);
+					contentId.addElement(timeSprite);					
+				}
+				if(timeGap==null)
+				{
+					timeGap = new UIComponent();
+					timeGap.mouseEnabled = false;
+					timeGap.graphics.clear();
+					timeGap.graphics.lineStyle(1,0xcccccc);
+					for(var i:int=1,len:int=contentId.width/GAP;i<len;i++)
+					{
+						var tmp:* = i*(GAP+1);
+						if(tmp<contentId.width)
+						{
+							timeGap.graphics.moveTo(i*(GAP+1),0);
+							timeGap.graphics.lineTo(i*(GAP+1),contentId.height);
+						}
+					}					
+					contentId.addElement(timeGap);
+				}				
+				if(unitData && unitData.effectData && unitData.effectData.timeRange>0){					
+					timeSprite.width = Number(unitData.timeRange)/ Number(unitData.effectData.timeRange) * contentId.width;
+					timeSprite.height = contentId.height;			
+					timeSprite.graphics.clear();
+					timeSprite.graphics.beginFill(0x000000,1);
+					timeSprite.graphics.drawRect(0,0,timeSprite.width,timeSprite.height);
+					timeSprite.graphics.endFill();
+					timeSprite.x = Number(unitData.startTime)/Number(unitData.effectData.timeRange) * contentId.width;
+				}
+			}
+			
+			protected function mxitemrenderer1_dataChangeHandler(event:FlexEvent):void
+			{
+				updateTimeRange();
+				
+				if(data)
+					renderId.selected = !EffectUnit(data.effectUnit).renderDisabled;
+			}
+			
+			protected function mouseDownHandler(event:MouseEvent):void
+			{
+				timeSprite.startDrag(false,new Rectangle(0,0,contentId.width - timeSprite.width,contentId.height - timeSprite.height));
+				event.stopImmediatePropagation();
+			}
+			
+			protected function mouseUpHandler(event:MouseEvent):void
+			{
+				timeSprite.stopDrag();
+				if(unitData && unitData.effectData && unitData.effectData.timeRange>0)
+				{
+					unitData.startTime = int(timeSprite.x/contentId.width * Number(unitData.effectData.timeRange));
+					unitData.timeRange = int(timeSprite.width/contentId.width * Number(unitData.effectData.timeRange));
+				}
+				
+				EffectTimelineView(data.effectTimelineView).reUpdateInfoView();
+			}
+			
+			protected function renderId_clickHandler(event:MouseEvent):void
+			{
+				event.stopImmediatePropagation();
+			}										
+			
+		]]>
+	</fx:Script>
+	
+	<s:CheckBox id="renderId" change="renderId_changeHandler(event)" click="renderId_clickHandler(event)"  selected="@{data.isRender}"/>
+	<s:Label id="labelField" x="18" y="3" width="101" height="15" fontSize="12" paddingTop="2"
+			 text="{data.name}" textAlign="left" verticalAlign="top"/>
+	<s:BorderContainer id="contentId" x="219" y="0" width="985" height="30" backgroundColor="#878789">
+		
+	</s:BorderContainer>
+	<s:Label x="119" y="2" width="60" height="17" text="{data.customName}" textAlign="center" 
+			 verticalAlign="middle"/>
+	<s:BorderContainer x="190" y="5" width="20" height="20" backgroundColor="{data.layerColor}"/>
+</s:MXItemRenderer >

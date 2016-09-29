@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<effectview:EffectUnitDataView_Abst xmlns:fx="http://ns.adobe.com/mxml/2009" 
+									xmlns:s="library://ns.adobe.com/flex/spark" 
+									xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:effectview="app.effectview.*"
+		 width="828" height="684">
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+		<s:RadioButtonGroup id="radiobuttonGroup" itemClick="changeInfoHandler(event)"/>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import deltax.graphic.effect.data.unit.CameraShakeData;
+			import deltax.graphic.effect.data.unit.EffectUnitData;
+			import deltax.graphic.effect.data.unit.camerashake.CameraShakeType;
+			
+			import spark.components.RadioButtonGroup;
+			
+			override public function set info(value:EffectUnitData):void{
+				super.info = value;
+				baseId.info = value;
+				updateData();
+			}
+			public function get theInfo():CameraShakeData{
+				return this._info as CameraShakeData;
+			}
+			private function updateData():void{
+				this.m_frequency.text = theInfo.m_frequency.toString();
+				this.m_strength.text = theInfo.m_strength.toString();
+				this.m_minRadius.text = theInfo.m_minRadius.toString();
+				this.m_maxRadius.text = theInfo.m_maxRadius.toString();
+				this.radiobuttonGroup.selectedValue = theInfo.m_shakeType;
+			}
+			
+			private function changeInfoHandler(event:Event):void{
+				theInfo.m_frequency = Number(this.m_frequency.text);
+				theInfo.m_strength = Number(this.m_strength.text);
+				theInfo.m_minRadius = Number(this.m_minRadius.text);
+				theInfo.m_maxRadius = Number(this.m_maxRadius.text);
+				theInfo.m_shakeType = uint(this.radiobuttonGroup.selectedValue);
+			}
+			
+		]]>
+	</fx:Script>
+	<effectview:EffectUnitDataView_Base id="baseId" x="300" y="0">
+	</effectview:EffectUnitDataView_Base>
+	<s:Label x="10" y="14" text="频率"/>
+	<s:TextInput id="m_frequency" x="94" y="10" change="changeInfoHandler(event)"/>
+	<s:Label x="10" y="40" text="强度"/>
+	<s:TextInput id="m_strength" x="94" y="36" change="changeInfoHandler(event)"/>
+	<s:Label x="10" y="64" text="半径(最小)"/>
+	<s:TextInput id="m_minRadius" x="94" y="60" change="changeInfoHandler(event)"/>
+	<s:Label x="10" y="90" text="半径(最大)"/>
+	<s:TextInput id="m_maxRadius" x="94" y="86" change="changeInfoHandler(event)"/>
+	<s:Label x="10" y="136" text="震动类型"/>
+	<s:RadioButton x="16" y="160" label="随机" value="{0}" group="{radiobuttonGroup}"/>
+	<s:RadioButton x="98" y="160" label="X轴" value="{1}" group="{radiobuttonGroup}"/>
+	<s:RadioButton x="169" y="160" label="Y轴" value="{2}" group="{radiobuttonGroup}"/>
+	<s:RadioButton x="227" y="160" label="Z轴" value="{3}" group="{radiobuttonGroup}"/>
+	<mx:VRule x="299" y="0" height="100%" strokeColor="0" strokeWidth="2"/>
+</effectview:EffectUnitDataView_Abst>

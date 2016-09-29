@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="utf-8"?>
+<effectview:EffectUnitDataView_Abst xmlns:fx="http://ns.adobe.com/mxml/2009" 
+									xmlns:s="library://ns.adobe.com/flex/spark" 
+									xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:effectview="app.effectview.*" width="828" height="730" initialize="effectunitdataview_abst1_initializeHandler(event)">
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+		<s:RadioButtonGroup id="m_renderType" itemClick="changeInfoHandler(event)"/>
+		<s:RadioButtonGroup id="m_bindType" itemClick="changeInfoHandler(event)"/>
+		<s:RadioButtonGroup id="m_textureType" itemClick="changeInfoHandler(event)"/>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import deltax.graphic.effect.data.unit.EffectUnitData;
+			import deltax.graphic.effect.data.unit.PolygonChainData;
+			import deltax.graphic.effect.data.unit.polychain.PolyChainRenderType;
+			import deltax.graphic.effect.data.unit.polychain.PolyChainTextureType;
+			
+			import app.effectview.data.EffectTypeMode;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			
+			import spark.components.RadioButtonGroup;
+			import spark.events.TextOperationEvent;
+			
+			override public function set info(value:EffectUnitData):void{
+				super.info = value;
+				baseId.info = value;
+				updateData();
+			}
+			public function get theInfo():PolygonChainData{
+				return this._info as PolygonChainData;
+			}
+			private function updateData():void{
+				this.m_startAngle.text = theInfo.m_startAngle.toString();
+				this.m_rotateSpeed.text = theInfo.m_rotateSpeed.toString();
+				this.m_chainWidth.text = theInfo.m_chainWidth.toString();
+				this.m_chainCount.text = theInfo.m_chainCount.toString();
+				this.m_chainNodeCount.text = theInfo.m_chainNodeCount.toString();
+				this.m_chainNodeMaxScope.text = theInfo.m_chainNodeMaxScope.toString();
+				this.m_chainNodeMinScope.text = theInfo.m_chainNodeMinScope.toString();
+				this.m_ditheringInterval.text = theInfo.m_ditheringInterval.toString();
+				this.m_uvSpeed.text = theInfo.m_uvSpeed.toString();
+				this.m_zTestMode.selectedIndex = theInfo.m_zTestMode;
+				this.m_enableLight.selected = theInfo.m_enableLight;
+				this.m_changeScaleByTime.selected = theInfo.m_changeScaleByTime;
+				this.m_scaleAsDitheringScope.selected = theInfo.m_scaleAsDitheringScope;
+				this.m_blendMode.selectedIndex = theInfo.m_blendMode;
+				this.m_textureType.selectedValue = theInfo.m_textureType.toString();
+				this.m_fitScale.text = theInfo.m_fitScale.toString();
+				this.m_maxBindRange.text = theInfo.m_maxBindRange.toString();
+				this.m_widthAsTexU.selected = theInfo.m_widthAsTexU;
+				this.m_invertTexU.selected = theInfo.m_invertTexU;
+				this.m_invertTexV.selected = theInfo.m_invertTexV;
+				this.m_randomChain.selected = theInfo.m_randomChain;
+				this.m_renderType.selectedValue = theInfo.m_renderType.toString();
+				this.m_diffuse.text = theInfo.m_diffuse.toString();
+				this.m_faceType.text = theInfo.m_faceType.toString();
+				this.m_nextBindName.text = theInfo.m_nextBindName;
+				this.m_bindType.selectedValue = theInfo.m_bindType.toString();
+			}
+			
+			protected function effectunitdataview_abst1_initializeHandler(event:FlexEvent):void
+			{
+				m_blendMode.dataProvider = new ArrayCollection(EffectTypeMode.BlendModes);
+				m_zTestMode.dataProvider = new ArrayCollection(EffectTypeMode.DepthTestModes);
+			}
+			
+			protected function changeInfoHandler(event:Event):void
+			{
+				theInfo.m_startAngle = Number(this.m_startAngle.text);
+				theInfo.m_rotateSpeed = Number(this.m_rotateSpeed.text);
+				theInfo.m_chainWidth = Number(this.m_chainWidth.text);
+				theInfo.m_chainNodeCount = int(this.m_chainNodeCount.text);
+				theInfo.m_chainNodeMaxScope = Number(this.m_chainNodeMaxScope.text);
+				theInfo.m_chainNodeMinScope = Number(this.m_chainNodeMinScope.text);
+				theInfo.m_ditheringInterval = int(this.m_ditheringInterval.text);
+				theInfo.m_uvSpeed = Number(this.m_uvSpeed.text);
+				theInfo.m_zTestMode = this.m_zTestMode.selectedIndex;
+				theInfo.m_enableLight = this.m_enableLight.selected;
+				theInfo.m_changeScaleByTime = this.m_changeScaleByTime.selected;
+				theInfo.m_scaleAsDitheringScope = this.m_scaleAsDitheringScope.selected;
+				theInfo.m_blendMode = this.m_blendMode.selectedIndex;
+				theInfo.m_textureType = uint(this.m_textureType.selectedValue);
+				theInfo.m_fitScale = Number(this.m_fitScale.text);
+				theInfo.m_maxBindRange = Number(this.m_maxBindRange.text);
+				theInfo.m_widthAsTexU = this.m_widthAsTexU.selected;
+				theInfo.m_invertTexU = this.m_invertTexU.selected;
+				theInfo.m_invertTexV = this.m_invertTexV.selected;
+				theInfo.m_randomChain = this.m_randomChain.selected;
+				theInfo.m_renderType = uint(this.m_renderType.selectedValue);
+				theInfo.m_diffuse = uint(this.m_diffuse.text);
+				theInfo.m_faceType = uint(this.m_faceType.text);
+				theInfo.m_nextBindName = this.m_nextBindName.text;
+				theInfo.m_bindType = uint(this.m_bindType.selectedValue);
+				
+				m_fitScale.enabled = (m_textureType.selectedValue == PolyChainTextureType.FILLSIZE);
+				
+				
+				if(theInfo.m_chainCount != int(this.m_chainCount.text)){
+					theInfo.m_chainCount = int(this.m_chainCount.text);
+					
+					theInfo.m_sinCosInfo = new Vector.<Number>((theInfo.m_chainCount * 2));
+					var idx:uint;
+					var _local5:uint;
+					while (idx < theInfo.m_chainCount) {
+						theInfo.m_sinCosInfo[_local5] = Math.cos((idx * 3.14159) / theInfo.m_chainCount);
+						_local5++;
+						
+						theInfo.m_sinCosInfo[_local5] = Math.sin((idx * 3.14159) / theInfo.m_chainCount);
+						_local5++;
+						
+						idx++;
+					}
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<effectview:EffectUnitDataView_Base id="baseId" x="300" y="0">
+	</effectview:EffectUnitDataView_Base>
+	<s:Label x="10" y="13" text="m_startAngle"/>
+	<s:TextInput id="m_startAngle" x="99" y="10" width="176" change="changeInfoHandler(event)"/>
+	<s:Label x="10" y="39" text="m_rotateSpeed"/>
+	<s:TextInput id="m_rotateSpeed" x="99" y="36" width="176" change="changeInfoHandler(event)" enabled="false"/>
+	<s:Label x="10" y="64" text="m_chainWidth"/>
+	<s:TextInput id="m_chainWidth" x="99" y="61" width="176" change="changeInfoHandler(event)"/>
+	<s:Label x="10" y="90" text="m_chainCount"/>
+	<s:TextInput id="m_chainCount" x="99" y="87" width="176" change="changeInfoHandler(event)"/>
+	<s:Label x="10" y="115" text="m_chainNodeCount"/>
+	<s:TextInput id="m_chainNodeCount" x="154" y="112" width="121" change="changeInfoHandler(event)"/>
+	<s:Label x="10" y="165" text="m_chainNodeMaxScope"/>
+	<s:TextInput id="m_chainNodeMaxScope" x="156" y="162" width="118" change="changeInfoHandler(event)"/>
+	<s:Label x="10" y="139" text="m_chainNodeMinScope"/>
+	<s:TextInput id="m_chainNodeMinScope" x="156" y="136" width="119" change="changeInfoHandler(event)"/>
+	<s:Label x="10" y="192" text="m_ditheringInterval"/>
+	<s:TextInput id="m_ditheringInterval" x="156" y="189" width="118" change="changeInfoHandler(event)"/>
+	<s:Label x="10" y="219" text="m_uvSpeed"/>
+	<s:TextInput id="m_uvSpeed" x="99" y="216" width="175" change="changeInfoHandler(event)"/>
+	<s:Label x="9" y="415" text="m_zTestMode"/>
+	<s:Label x="10" y="441" text="m_blendMode"/>
+	<s:Label x="10" y="471" text="m_textureType"/>
+	<s:Label x="10" y="515" text="m_fitScale"/>
+	<s:TextInput id="m_fitScale" x="99" y="512" width="175" change="changeInfoHandler(event)"/>
+	<s:Label x="10" y="541" text="m_maxBindRange"/>
+	<s:TextInput id="m_maxBindRange" x="156" y="538" width="118" change="changeInfoHandler(event)"/>
+	<s:Label x="10" y="568" text="m_renderType"/>
+	<s:Label x="10" y="589" text="m_diffuse"/>
+	<s:TextInput id="m_diffuse" x="99" y="586" width="175" change="changeInfoHandler(event)" enabled="false"/>
+	<s:Label x="10" y="615" text="m_faceType"/>
+	<s:TextInput id="m_faceType" x="99" y="612" width="175" change="changeInfoHandler(event)" enabled="false"/>
+	<s:Label x="10" y="641" text="m_nextBindName"/>
+	<s:TextInput id="m_nextBindName" x="118" y="638" width="156" change="changeInfoHandler(event)"/>
+	<s:Label x="10" y="670" text="m_bindType"/>
+	<s:CheckBox id="m_enableLight" x="10" y="246" label="m_enableLight"
+				change="changeInfoHandler(event)" enabled="false"/>
+	<s:CheckBox id="m_changeScaleByTime" x="10" y="268" label="m_changeScaleByTime"
+				change="changeInfoHandler(event)"/>
+	<s:CheckBox id="m_scaleAsDitheringScope" x="10" y="290" label="m_scaleAsDitheringScope"
+				change="changeInfoHandler(event)"/>
+	<s:CheckBox id="m_widthAsTexU" x="10" y="312" label="m_widthAsTexU"
+				change="changeInfoHandler(event)"/>
+	<s:CheckBox id="m_invertTexU" x="10" y="335" label="m_invertTexU"
+				change="changeInfoHandler(event)"/>
+	<s:CheckBox id="m_invertTexV" x="10" y="361" label="m_invertTexV"
+				change="changeInfoHandler(event)"/>
+	<s:CheckBox id="m_randomChain" x="10" y="383" label="m_randomChain"
+				change="changeInfoHandler(event)" enabled="false"/>
+	<s:ComboBox id="m_blendMode" x="96" y="409" width="178" change="changeInfoHandler(event)"/>
+	<s:ComboBox id="m_zTestMode" x="96" y="437" width="178" change="changeInfoHandler(event)"/>
+	<s:RadioButton x="98" y="565" label="RANDOM" groupName="m_renderType" value="0"/>
+	<s:RadioButton x="192" y="565" label="SMOOTH" groupName="m_renderType" value="1"/>
+	<s:RadioButton x="95" y="666" label="DEFAULT" groupName="m_bindType" value="0"/>
+	<s:RadioButton x="95" y="687" label="ONLY_SELF_PARENT" groupName="m_bindType" value="1"/>
+	<s:RadioButton x="95" y="707" label="ONLY_SELF_EFFECT" groupName="m_bindType" value="2"/>
+	<s:RadioButton x="98" y="468" label="STRETCH" groupName="m_textureType" value="0"/>
+	<s:RadioButton x="180" y="468" label="REPEAT" groupName="m_textureType" value="1"/>
+	<s:RadioButton x="98" y="489" label="FILLSIZE" groupName="m_textureType" value="2"/>
+	<mx:VRule x="299" y="0" height="100%" strokeColor="0" strokeWidth="2"/>
+</effectview:EffectUnitDataView_Abst>

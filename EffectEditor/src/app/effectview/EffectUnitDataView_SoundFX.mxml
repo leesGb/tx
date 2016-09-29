@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<effectview:EffectUnitDataView_Abst xmlns:fx="http://ns.adobe.com/mxml/2009" 
+									xmlns:s="library://ns.adobe.com/flex/spark" 
+									xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:effectview="app.effectview.*"
+		 width="828" height="684">
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.hmh.utils.FileHelper;
+			
+			import deltax.common.resource.Enviroment;
+			import deltax.graphic.effect.data.unit.EffectUnitData;
+			import deltax.graphic.effect.data.unit.ScreenFilterData;
+			import deltax.graphic.effect.data.unit.SoundFXData;
+			
+			public function get theInfo():SoundFXData{
+				return this._info as SoundFXData;
+			}
+			override public function set info(value:EffectUnitData):void{
+				this._info = value;
+				baseId.info = value;
+				
+				updateData();
+			}
+			private function updateData():void{ 
+				this.m_minDistance.text = theInfo.m_minDistance.toString();
+				this.m_maxDistance.text = theInfo.m_maxDistance.toString();
+				this.m_playRatio.text = theInfo.m_playRatio.toString();
+				this.m_audioFileName.text = theInfo.m_audioFileName;
+			}
+			
+			private function changeInfoHandler(event:Event):void{
+				theInfo.m_minDistance = Number(this.m_minDistance.text);
+				theInfo.m_maxDistance = Number(this.m_maxDistance.text);
+				theInfo.m_playRatio = Number(this.m_playRatio.text);
+				theInfo.m_audioFileName = this.m_audioFileName.text;
+			}
+			
+			protected function openSelectAudioFileNameHandler(event:MouseEvent):void
+			{
+				var file:File = new File(Enviroment.ResourceRootPath + "sound");
+				file.addEventListener(Event.SELECT,__selectAudioFileHandler);
+				file.browseForOpen("选择音效文件",[new FileFilter("mp3","*.mp3")]);
+			}
+			
+			protected function __selectAudioFileHandler(event:Event):void
+			{
+				var file:File = File(event.currentTarget);
+				m_audioFileName.text = FileHelper.getResComparPath(file.nativePath);
+			}
+			
+		]]>
+	</fx:Script>
+	<effectview:EffectUnitDataView_Base id="baseId" x="300" y="0">
+	</effectview:EffectUnitDataView_Base>
+	<s:Label x="10" y="15" text="距离(min)"/>
+	<s:TextInput id="m_minDistance" x="128" y="10"  change="changeInfoHandler(event)"/>
+	<s:Label x="11" y="45" text="距离(max)"/>
+	<s:TextInput id="m_maxDistance" x="129" y="40"  change="changeInfoHandler(event)"/>
+	<s:Label x="10" y="70" text="播放几率(0~1)" toolTip="0到1之间，值越大播放几率越大(随机一个0-1的数，当此值小于此系数，将播放音效，大于此值时不播放)"/>
+	<s:TextInput id="m_playRatio" x="128" y="65"  change="changeInfoHandler(event)"/>
+	<s:Label x="11" y="105" text="文件路径"/>
+	<s:TextInput id="m_audioFileName" x="11" y="124" width="270" change="changeInfoHandler(event)" editable="false"/>
+	<s:Button x="11" y="154" width="30" label="b" click="openSelectAudioFileNameHandler(event)"/>
+	<mx:VRule x="300" y="0" height="100%" strokeColor="0" strokeWidth="2"/>
+</effectview:EffectUnitDataView_Abst>

@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="348" height="184">
+	<fx:Declarations>
+		<s:RadioButtonGroup id="mtrGroup" itemClick="clickHandler(event)"/>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import deltax.common.resource.Enviroment;
+			
+			import mx.controls.RadioButtonGroup;
+			import mx.events.ItemClickEvent;
+			public var deleteCallBack:Function;
+			
+			protected function deleteClickHandler(event:MouseEvent):void
+			{
+				deleteCallBack(this);
+			}
+			
+			protected function addTextureHandler(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+				var file:File = new File();
+				file.addEventListener(Event.SELECT,selectTextureHandler);
+				file.browseForOpen("选择图片",[new FileFilter("jpg;png,ajpg","*.jpg;*.png;*.ajpg")]);
+			}
+			
+			protected function selectTextureHandler(event:Event):void
+			{
+				var file:File = event.currentTarget as File;
+				file.removeEventListener(Event.SELECT,selectTextureHandler);
+				if(texId.text == "null"){
+					texId.text = "";
+				}
+				
+				var resourceRootPath:String = new File(Enviroment.ResourceRootPath).nativePath.toLocaleLowerCase() + "\\";
+				var textureUrl:String = file.nativePath.toLocaleLowerCase().replace(resourceRootPath,"").replace(/\\/g,"/");
+				if(texId.text == "")
+					texId.text = textureUrl;
+				else
+					texId.text = texId.text + "\n" + textureUrl;
+			}
+			
+			protected function openMatFileHandler(event:MouseEvent):void
+			{
+				var file:File = new File(Enviroment.ResourceRootPath + "mat");
+				file.addEventListener(Event.SELECT,selectMatHandler);
+				file.browseForOpen("选择材质",[new FileFilter("mtr","*.mtr")]);
+			}
+			
+			protected function selectMatHandler(event:Event):void
+			{
+				var file:File = event.currentTarget as File;
+				file.removeEventListener(Event.SELECT,selectMatHandler);
+				var resourceRootPath:String = new File(Enviroment.ResourceRootPath).nativePath.toLocaleLowerCase() + "\\";
+				var matUrl:String = file.nativePath.toLocaleLowerCase().replace(resourceRootPath,"").replace(/\\/g,"/");
+				matId.text = matUrl;
+				mtrGroup.selectedValue = null;
+			}
+			
+			private function clickHandler(event:Event):void{
+				matId.text = mtrGroup.selectedValue as String;
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<s:Group id="groupId" x="7" y="7" width="331" height="167">
+		<s:Label x="11" y="46" text="mat"/>
+		<s:TextInput id="matId" x="57" y="40" width="210"/>
+		<s:Label x="12" y="102" text="texture"/>
+		<s:Label x="10" y="20" text="matId"/>
+		<s:TextInput id="idx" x="57" y="13" selectable="false" editable="false"/>
+		<mx:HRule x="10" y="3" width="312"/>
+		<s:Button x="287" y="10" width="35" label="X" click="deleteClickHandler(event)"/>
+		<s:Button x="1" y="122" width="56" height="27" label="add&gt;&gt;" click="addTextureHandler(event)"/>
+		<s:Button x="272" y="41" width="46" label="&lt;&lt;" click="openMatFileHandler(event)"/>
+		<s:RadioButton x="57" y="70" label="不透单" group="{mtrGroup}" value="mat/不透明单面.mtr"/>
+		<s:RadioButton x="125" y="70" label="不透双" group="{mtrGroup}" value="mat/不透明双面.mtr"/>				
+		<s:RadioButton x="189" y="70" label="角色" group="{mtrGroup} " value="mat/无混合全透高c4.mtr"/>
+		<s:RadioButton x="250" y="70" label="npc" group="{mtrGroup}" value="mat/无混合全透高c4_npc.mtr"/>
+	</s:Group>
+	<s:TextArea id="texId" x="64" y="106" width="262" height="65"/>
+</s:Group>

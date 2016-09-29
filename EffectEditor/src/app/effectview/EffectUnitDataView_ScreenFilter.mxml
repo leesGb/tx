@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<effectview:EffectUnitDataView_Abst xmlns:fx="http://ns.adobe.com/mxml/2009" 
+									xmlns:s="library://ns.adobe.com/flex/spark" 
+									xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:effectview="app.effectview.*"
+		 width="828" height="684" initialize="effectunitdataview_abst1_initializeHandler(event)">
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+		<s:RadioButtonGroup id="m_filterType" itemClick="changeInfoHandler(event)"/>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import deltax.graphic.effect.data.unit.EffectUnitData;
+			import deltax.graphic.effect.data.unit.ScreenFilterData;
+			import deltax.graphic.effect.data.unit.screenfilter.ScreenFilterType;
+			
+			import app.effectview.data.EffectTypeMode;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			
+			import spark.components.RadioButtonGroup;
+			
+			
+			public function get theInfo():ScreenFilterData{
+				return this._info as ScreenFilterData;
+			}
+			override public function set info(value:EffectUnitData):void{
+				this._info = value;
+				baseId.info = value;
+				
+				updateData();
+			}
+			private function updateData():void{
+				this.m_filterType.selectedValue = theInfo.m_filterType.toString();				
+				this.m_blendMode.selectedIndex = theInfo.m_blendMode;
+				this.m_zTestMode.selectedIndex = theInfo.m_zTestMode;
+				this.m_xScale.text = theInfo.m_xScale.toString();
+				this.m_yScale.text = theInfo.m_yScale.toString();
+				this.m_zScale.text = theInfo.m_zScale.toString();
+				this.m_scaleLevel.text = theInfo.m_scaleLevel.toString();
+				this.m_darknessAttenuation.text = theInfo.m_darknessAttenuation.toString();
+				this.m_brightnessAttenuation.text = theInfo.m_brightnessAttenuation.toString();
+			}
+			
+			private function changeInfoHandler(event:Event):void{
+				theInfo.m_blendMode = uint(this.m_blendMode.selectedIndex);
+				theInfo.m_filterType = uint(this.m_filterType.selectedValue);
+				theInfo.m_zTestMode = uint(this.m_zTestMode.selectedIndex);
+				theInfo.m_xScale = Number(this.m_xScale.text);
+				theInfo.m_yScale = Number(this.m_yScale.text);
+				theInfo.m_zScale = Number(this.m_zScale.text);
+				theInfo.m_scaleLevel = uint(this.m_scaleLevel.text);
+				theInfo.m_darknessAttenuation = Number(this.m_darknessAttenuation.text);
+				theInfo.m_brightnessAttenuation = Number(this.m_brightnessAttenuation.text);
+			}
+			
+			protected function effectunitdataview_abst1_initializeHandler(event:FlexEvent):void
+			{
+				// TODO Auto-generated method stub
+				m_blendMode.dataProvider = new ArrayCollection(EffectTypeMode.BlendModes);
+				m_zTestMode.dataProvider = new ArrayCollection(EffectTypeMode.DepthTestModes);
+				ScreenFilterType
+			}
+			
+		]]>
+	</fx:Script>
+	<effectview:EffectUnitDataView_Base id="baseId" x="300" y="0">
+	</effectview:EffectUnitDataView_Base>
+	<s:Label x="10" y="215" text="m_blendMode"/>
+	<s:Label x="10" y="14" text="m_filterType"/>
+	<s:Label x="10" y="240" text="m_zTestMode"/>
+	<s:Label x="10" y="63" text="m_xScale"/>
+	<s:TextInput id="m_xScale" x="98" y="59" change="changeInfoHandler(event)"/>
+	<s:Label x="10" y="88" text="m_yScale"/>
+	<s:TextInput id="m_yScale" x="98" y="84" change="changeInfoHandler(event)"/>
+	<s:Label x="10" y="112" text="m_zScale"/>
+	<s:TextInput id="m_zScale" x="98" y="108" change="changeInfoHandler(event)"/>
+	<s:Label x="10" y="137" text="m_scaleLevel"/>
+	<s:TextInput id="m_scaleLevel" x="98" y="133" change="changeInfoHandler(event)"/>
+	<s:Label x="10" y="163" text="m_darknessAttenuation"/>
+	<s:TextInput id="m_darknessAttenuation" x="151" y="159" change="changeInfoHandler(event)"/>
+	<s:Label x="10" y="187" text="m_brightnessAttenuation"/>
+	<s:TextInput id="m_brightnessAttenuation" x="151" y="183" change="changeInfoHandler(event)"/>
+	<s:ComboBox id="m_blendMode" x="94" y="209" width="185" change="changeInfoHandler(event)"/>
+	<s:ComboBox id="m_zTestMode" x="94" y="237" width="185" change="changeInfoHandler(event)"/>
+	<s:RadioButton x="102" y="10" label="CUSTOM_TEXTURE" value="0" group="{m_filterType}"/>
+	<s:RadioButton x="102" y="33" label="GRAY" value="1" group="{m_filterType}"/>
+	<s:RadioButton x="182" y="33" label="BLUR" value="2" group="{m_filterType}"/>
+	<mx:VRule x="300" y="0" height="100%" strokeColor="0" strokeWidth="2"/>
+</effectview:EffectUnitDataView_Abst>

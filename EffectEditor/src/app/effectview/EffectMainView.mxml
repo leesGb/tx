@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:effectview="app.effectview.*"
+		 creationComplete="group1_creationCompleteHandler(event)">
+	
+	<fx:Script>
+		<![CDATA[
+			import app.effectview.data.EffectCommonData;
+			
+			import deltax.common.resource.Enviroment;
+			import deltax.graphic.effect.data.EffectGroup;
+			import deltax.graphic.manager.ResourceManager;
+			import deltax.graphic.manager.ResourceType;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.UITextField;
+			import mx.events.FlexEvent;
+			
+			import spark.events.TextOperationEvent;
+			
+			public var effectTimelineView:EffectTimelineView;
+			private var rootPath:File 
+			
+			protected function group1_creationCompleteHandler(event:FlexEvent):void
+			{
+				EffectCommonData.Instance.effectMainView = this;	
+			}
+			
+			public function updateTimeline():void
+			{
+				effectTimelineView.info = effectTimelineView.info;
+			}
+			
+			public function updateFileTree():void
+			{
+				rootPath= new File(Enviroment.ResourceRootPath + "/fx/cfg");
+				var arr:Array = [];
+				checkFileArr(rootPath,arr);
+				var ac:ArrayCollection = new ArrayCollection(arr);				
+				treeId.dataProvider = ac;
+				//
+				effectList.rootPath = rootPath;
+			}
+			
+			private function checkFileArr(parentFile:File,arr:Array):void
+			{
+				for each(var file:File in parentFile.getDirectoryListing())
+				{
+					if(file.name.indexOf("svn") == -1)
+					{					
+						var obj:Object = new Object();
+						arr.push(obj);
+						obj.name = file.name;
+						obj.data = file;
+						if(file.isDirectory)
+						{
+							var childArr:Array = [];
+							checkFileArr(file,childArr);
+							obj.children = new ArrayCollection(childArr);
+						}else
+						{
+							obj.children = null;
+						}
+					}
+				}
+			}
+			
+			protected function selectItemHandler(event:MouseEvent):void
+			{
+				if(treeId.selectedItem == null)return;
+				if(!(event.target is UITextField))return;
+				//
+				var curFile:File = treeId.selectedItem.data as File;
+				if(curFile.nativePath.indexOf(".eft")<0)return;
+				pathId.text = curFile.nativePath;
+				//
+				ResourceManager.instance.getResource(curFile.nativePath, ResourceType.EFFECT_GROUP, onEffectGroupLoad,EffectGroup,true);
+			}
+			
+			private function onEffectGroupLoad(effectGroup:EffectGroup, b:Boolean):void
+			{
+				effectList.updateData(effectGroup);
+			}
+			
+			public function setViewVisible(type:uint):void
+			{
+				if(type == 1)
+				{
+					effectList.visible = true;
+					effectUnitDataView.visible = false;
+				}else
+				{
+					effectList.visible = false;
+					effectUnitDataView.visible = true;
+				}
+			}
+			
+			protected function createEffect_clickHandler(event:MouseEvent):void
+			{
+				effectList.createNewHandler();
+			}
+			
+			protected function saveEffect_clickHandler(event:MouseEvent):void
+			{
+				effectList.saveHandler();
+			}
+			
+			protected function timeRangeId_changeHandler(event:TextOperationEvent):void
+			{
+				if(EffectCommonData.Instance.curEffectData)
+				{
+					EffectCommonData.Instance.curEffectData.m_timeRange = uint(effectTime.text);
+				}
+			}
+			
+			public function curEffectUrlChangeHanlder():void
+			{
+				if(EffectCommonData.Instance.curEffectData)
+				{
+					effectTime.text = ""+EffectCommonData.Instance.curEffectData.timeRange;
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<s:Label x="214" y="22" fontFamily="Arial" text="特效路径"/>
+	<s:TextInput id="pathId" x="265" y="10" width="409" height="30" editable="false"/>
+	<s:Label x="688" y="22" text="特效时间"/>
+	<s:TextInput id="effectTime" x="739" y="10" width="85" height="30" change="timeRangeId_changeHandler(event)" editable="false"/>
+	<s:Label x="838" y="22" text="特效名字"/>
+	<s:TextInput id="fullName" x="890" y="10" height="30" editable="false"/>
+				
+	<mx:HRule x="205" y="42" width="100%" height="8" strokeColor="0" strokeWidth="2"/>
+	<mx:VRule x="202" y="0" width="8" height="100%" strokeColor="0" strokeWidth="2"/>
+	
+	<s:BorderContainer id="treeContainer" x="0" y="0" width="204" height="100%" backgroundAlpha="0.0" contentBackgroundAlpha="1.0">
+		<s:Button id="createEffect" x="17" y="6" width="80" height="30" label="创建特效组" click="createEffect_clickHandler(event)"/>
+		<s:Button id="saveEffect" x="101" y="6" width="80" height="30" label="保存特效" click="saveEffect_clickHandler(event)"/>
+		<mx:HRule x="0" y="43" width="100%" strokeColor="0" strokeWidth="2"/>
+		<mx:Tree id="treeId" x="2" y="50" width="200" height="100%" borderVisible="false" click="selectItemHandler(event)" labelField="name" showRoot="false"></mx:Tree>
+	</s:BorderContainer>
+	
+	<s:BorderContainer x="208" y="50" width="100%" height="100%" backgroundColor="#b1b1b1">
+		<effectview:EffectUnitDataView id="effectUnitDataView" x="0" y="0" width="100%" height="100%" visible="false"/>
+		<effectview:EffectListView id="effectList" x="0" y="0" width="100%" height="100%" visible="false" effectMainView="{this}"/>
+	</s:BorderContainer>
+</s:Group>

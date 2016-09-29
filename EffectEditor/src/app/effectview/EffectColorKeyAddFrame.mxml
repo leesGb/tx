@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   width="340" height="236" title="addkey color" close="titlewindow1_closeHandler(event)" creationComplete="titlewindow1_creationCompleteHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.events.CloseEvent;
+			import mx.events.ColorPickerEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			import mx.managers.PopUpManager;
+			
+			import spark.events.GridSelectionEvent;
+			
+			public var callBack:Function;
+			private static var colorRecords:Array;			
+			
+			protected function titlewindow1_closeHandler(event:CloseEvent):void
+			{
+				// TODO Auto-generated method stub
+				PopUpManager.removePopUp(this);				
+			}
+			
+			
+			
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+				var colorValue:uint = colorPickerId.selectedColor;
+				var alphaValue:Number = Number(alphaId.text);
+				var keytimeValue:Number = Number(keytimeId.text);
+				callBack(keytimeValue,colorValue,alphaValue);
+				titlewindow1_closeHandler(null);
+			}
+			
+			protected function colorPickerId_changeHandler(event:ColorPickerEvent):void
+			{
+				// TODO Auto-generated method stub
+				colorTF.text = colorPickerId.selectedColor.toString(16);
+				
+			}
+			
+			protected function titlewindow1_creationCompleteHandler(event:FlexEvent):void
+			{
+				this.setFocus();
+				if(!colorRecords){
+					colorRecords = new Array(10);
+					for(var i:int=0;i<10;i++){
+						colorRecords[i] = 0xffff00;
+					}					
+				}
+				colorRecordId.dataProvider = new ArrayCollection(colorRecords);
+				addEventListener(KeyboardEvent.KEY_UP,function(e:KeyboardEvent):void{
+					if(e.keyCode==Keyboard.SPACE){
+						okBtn.dispatchEvent(new MouseEvent(MouseEvent.CLICK));
+					}
+				});
+			}						
+			
+			protected function colorRecordId_itemClickHandler(event:ListEvent):void
+			{
+				colorTF.text = uint(colorRecordId.selectedItem).toString(16);
+				colorPickerId.selectedColor = uint(colorRecordId.selectedItem);
+			}
+			
+			protected function registerClickHandler(event:MouseEvent):void
+			{				
+				if(colorRecords.indexOf(colorPickerId.selectedColor)==-1){
+					colorRecords.unshift(colorPickerId.selectedColor);
+					colorRecords.pop();
+					colorRecordId.dataProvider = new ArrayCollection(colorRecords);
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<mx:ColorPicker id="colorPickerId" x="57" y="39" showTextField="true" change="colorPickerId_changeHandler(event)"/>
+	<s:TextInput id="colorTF" x="83" y="40" width="83" height="22" fontSize="14" text="#000000" editable="false"/>
+	<s:Label x="10" y="45" text="color"/>
+	<s:Label x="10" y="79" text="alpha"/>
+	<s:TextInput x="57" y="74" id="alphaId"/>
+	<s:Label x="12" y="14" text="keytime"/>
+	<s:TextInput id="keytimeId" x="58" y="10"/>
+	<s:Button id="okBtn" x="135" y="148" label="ok" click="button1_clickHandler(event)"/>
+	<mx:List id="colorRecordId" x="276" y="4" width="42" height="190" itemRenderer="app.effectview.renderer.ColorRecordRender" itemClick="colorRecordId_itemClickHandler(event)"/>		
+	<s:Button x="174" y="40" width="49" label="寄存" click="registerClickHandler(event)"/>
+	
+</s:TitleWindow>

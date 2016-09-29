@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<effectview:EffectUnitDataView_Abst xmlns:fx="http://ns.adobe.com/mxml/2009" 
+									xmlns:s="library://ns.adobe.com/flex/spark" 
+									xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:effectview="app.effectview.*"
+		 width="828" height="684">
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.hmh.utils.FileHelper;
+			
+			import deltax.common.resource.Enviroment;
+			import deltax.graphic.effect.data.unit.EffectUnitData;
+			import deltax.graphic.effect.data.unit.ModelConsoleData;
+			
+			import app.effectview.data.EffectCommonData;
+			public function get theInfo():ModelConsoleData{
+				return this._info as ModelConsoleData;
+			}
+			override public function set info(value:EffectUnitData):void{
+				super.info = value;
+				baseId.info = value;
+				
+				updateData();
+			}
+			private function updateData():void{
+				this.m_linkedParentSkeletal.text = theInfo.m_linkedParentSkeletal;
+				this.m_skeletalIndex.text = theInfo.m_skeletalIndex.toString();
+				this.m_figure1.text = theInfo.m_figure1.toString();
+				this.m_figure2.text = theInfo.m_figure2.toString();
+				this.m_startAngle.text = theInfo.m_startAngle.toString();
+				this.m_maxScale.text = theInfo.m_maxScale.toString();
+				this.m_minScale.text = theInfo.m_minScale.toString();
+				this.m_meshName.text = theInfo.m_meshName;
+				this.m_aniGroupName.text = theInfo.m_aniGroupName;
+				this.m_rotate_x.text = theInfo.m_rotate.x.toString();
+				this.m_rotate_y.text = theInfo.m_rotate.y.toString();
+				this.m_rotate_z.text = theInfo.m_rotate.z.toString();				
+				this.m_animationIndex.text = theInfo.m_animationIndex.toString();
+				this.m_syncronize.selected = theInfo.m_syncronize;
+				this.m_mergeLevel.text = theInfo.m_mergeLevel.toString();
+				
+				pieceMaterialIndiceContentId.removeAllElements();
+				for(var i:int = 0;i<theInfo.m_pieceClassIndice.length;i++){
+					var modelConstMaterialView:EffectModelConstMaterialView = new EffectModelConstMaterialView();
+					modelConstMaterialView.idx = i;
+					modelConstMaterialView.info = theInfo;
+					modelConstMaterialView.m_pieceClassIndice.text = theInfo.m_pieceClassIndice[i].toString();
+					modelConstMaterialView.m_pieceMaterialIndice.text = theInfo.m_pieceMaterialIndice[i].toString();
+					if(theInfo.m_pieceGroup && theInfo.m_pieceGroup.m_pieceClasses && i<theInfo.m_pieceGroup.m_pieceClasses.length){
+						modelConstMaterialView.m_className.text = theInfo.m_pieceGroup.m_pieceClasses[i].m_name;
+					}
+					pieceMaterialIndiceContentId.addElement(modelConstMaterialView);
+				}
+			}
+			
+			private function changeInfoHandler(event:Event):void{
+				var refreshView:Boolean=false;
+				theInfo.m_linkedParentSkeletal = this.m_linkedParentSkeletal.text;
+				theInfo.m_skeletalIndex = uint(this.m_skeletalIndex.text);
+				theInfo.m_figure1 = uint(this.m_figure1.text);
+				theInfo.m_figure2 = uint(this.m_figure2.text);
+				theInfo.m_startAngle = Number(this.m_startAngle.text);
+				theInfo.m_maxScale = Number(this.m_maxScale.text);
+				theInfo.m_minScale = Number(this.m_minScale.text);
+				if(theInfo.m_meshName != this.m_meshName.text){
+					theInfo.m_meshName = this.m_meshName.text;
+					refreshView = true;
+				}
+				if(theInfo.m_aniGroupName != this.m_aniGroupName.text){
+					theInfo.m_aniGroupName = this.m_aniGroupName.text;
+					refreshView = true;
+				}
+				theInfo.m_rotate.x = Number(this.m_rotate_x.text);
+				theInfo.m_rotate.y = Number(this.m_rotate_y.text);
+				theInfo.m_rotate.z = Number(this.m_rotate_z.text);
+				theInfo.m_animationIndex = int(this.m_animationIndex.text);
+				theInfo.m_syncronize = this.m_syncronize.selected;
+				theInfo.m_mergeLevel = uint(this.m_mergeLevel.text);
+				
+				theInfo.m_angularVelocity = theInfo.m_rotate.length;
+				if(refreshView){
+					theInfo.calculateProps();
+					if(EffectCommonData.Instance.effectMainView.effectTimelineView.previewEffectFun!=null)
+						EffectCommonData.Instance.effectMainView.effectTimelineView.previewEffectFun();
+				}
+			}
+			
+			protected function selectMeshNameHandler(event:MouseEvent):void
+			{
+				var file:File = new File(Enviroment.ResourceRootPath + "fx/mod");
+				file.addEventListener(Event.SELECT,function():void{
+					m_meshName.text = FileHelper.getResComparPath(file.nativePath);
+					changeInfoHandler(null);					
+				});
+				file.browseForOpen("选择模型文件",[new FileFilter("ams","*.ams")]);				
+			}
+			
+			protected function selectAniGroupNameHandler(event:MouseEvent):void
+			{
+				var file:File = new File(Enviroment.ResourceRootPath + "fx/ani");
+				file.addEventListener(Event.SELECT,function():void{
+					m_aniGroupName.text = FileHelper.getResComparPath(file.nativePath);
+					changeInfoHandler(null);					
+				});
+				file.browseForOpen("选择动作骨骼文件",[new FileFilter("ans","*.ans")]);
+			}
+			
+		]]>
+	</fx:Script>
+	<effectview:EffectUnitDataView_Base id="baseId" x="299" y="0">
+	</effectview:EffectUnitDataView_Base>
+	<s:Label x="7" y="440" text="m_linkedParentSkeletal"/>
+	<s:TextInput id="m_linkedParentSkeletal" x="145" y="435"  change="changeInfoHandler(event)"/>
+	<s:Label x="7" y="465" text="m_skeletalIndex"/>
+	<s:TextInput id="m_skeletalIndex" x="145" y="460"  change="changeInfoHandler(event)"/>
+	<s:Label x="6" y="492" text="m_figure1"/>
+	<s:TextInput id="m_figure1" x="112" y="487"  change="changeInfoHandler(event)"/>
+	<s:Label x="6" y="517" text="m_figure2"/>
+	<s:TextInput id="m_figure2" x="112" y="512"  change="changeInfoHandler(event)"/>
+	<s:Label x="5" y="618" text="m_startAngle"/>
+	<s:TextInput id="m_startAngle" x="111" y="613"  change="changeInfoHandler(event)" enabled="false"/>
+	<s:Label x="5" y="147" text="scale最大值"/>
+	<s:TextInput id="m_maxScale" x="111" y="142"  change="changeInfoHandler(event)"/>
+	<s:Label x="5" y="122" text="scale最小值"/>
+	<s:TextInput id="m_minScale" x="111" y="117"  change="changeInfoHandler(event)"/>
+	<s:Label x="5" y="15" text="模型文件"/>
+	<s:TextInput id="m_meshName" x="91" y="10" width="147"  change="changeInfoHandler(event)"/>
+	<s:Label x="6" y="40" text="骨骼动作组文件"/>
+	<s:TextInput id="m_aniGroupName" x="92" y="35" width="146"  change="changeInfoHandler(event)"/>
+	<s:Label x="7" y="69" text="旋转方向"/>
+	<s:TextInput id="m_rotate_x" x="7" y="87" width="91" change="changeInfoHandler(event)"/>
+	<s:Label x="7" y="177" text="模型材质"/>
+	<s:Label x="5" y="568" text="m_animationIndex"/>
+	<s:TextInput id="m_animationIndex" x="111" y="563"  change="changeInfoHandler(event)" enabled="true"/>
+	<s:Label x="5" y="593" text="m_mergeLevel"/>
+	<s:TextInput id="m_mergeLevel" x="111" y="588"  change="changeInfoHandler(event)" enabled="false"/>
+	<s:Scroller x="11" y="195" width="266" height="228">
+		<s:VGroup id="pieceMaterialIndiceContentId" width="100%" height="100%">
+		</s:VGroup>
+	</s:Scroller>
+	<s:TextInput id="m_rotate_y" x="102" y="87" width="91" change="changeInfoHandler(event)"/>
+	<s:TextInput id="m_rotate_z" x="196" y="87" width="91" change="changeInfoHandler(event)"/>
+	<s:CheckBox id="m_syncronize" x="5" y="537" label="m_syncronize" change="changeInfoHandler(event)"/>
+	<s:Button x="241" y="10" width="30" label="b" click="selectMeshNameHandler(event)"/>
+	<s:Button x="241" y="36" width="30" label="b" click="selectAniGroupNameHandler(event)"/>
+	<mx:VRule x="299" y="0" height="100%" strokeColor="0" strokeWidth="2"/>
+</effectview:EffectUnitDataView_Abst>

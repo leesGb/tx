@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   width="400" height="176" title="create effect unit" 
+			   creationComplete="titlewindow1_creationCompleteHandler(event)" 
+			   close="titlewindow1_closeHandler(event)"
+			   >
+	<fx:Script>
+		<![CDATA[
+			import deltax.graphic.effect.EffectUnitType;
+			
+			import app.effectview.data.EffectCommonData;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.events.DropdownEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			private static var DISPLAY_NAMES:Vector.<String> = Vector.<String>(["粒子系统", "公告板", "多边形轨迹", "镜头抖动", "屏幕滤镜", "模型特效", "动态光", "空特效", "3D音效", "材质特效", "多边形链", "体型动画"]);
+			private var DISPLAY_ENABLED:Vector.<Boolean> = Vector.<Boolean>(      [true,        true,       true,        true,        true,       true,     true,     true,    true, true, true, false]);
+			
+			public var okFun:Function;
+			protected function titlewindow1_creationCompleteHandler(event:FlexEvent):void
+			{
+				var arr:Array = [];
+				for(var i:int = 0;i<EffectUnitType.COUNT;i++){
+					arr.push({m_name:EffectUnitType.getDisplayName(i),m_type:i})
+				}
+				effectUnitCB.dataProvider = new ArrayCollection(arr);
+				effectUnitCB.selectedIndex=0;
+				effectUnitCB.validateNow();
+			}
+			
+			protected function okHandler(event:MouseEvent):void
+			{
+				if(!effectUnitCB.selectedItem)return;
+				
+				var curType:int = effectUnitCB.selectedItem.m_type;
+				if(okFun!=null){
+					if(DISPLAY_ENABLED[curType] == true){
+						okFun(curType);
+						PopUpManager.removePopUp(this);
+					}else{
+						Alert.show("此功能未开放");
+					}
+
+				}
+			}
+			
+			protected function titlewindow1_closeHandler(event:CloseEvent):void
+			{
+				PopUpManager.removePopUp(this);
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<mx:ComboBox x="48" y="29" width="303" id="effectUnitCB" labelField="m_name" />
+	<s:Button x="164" y="87" label="ok" click="okHandler(event)"/>
+</s:TitleWindow>

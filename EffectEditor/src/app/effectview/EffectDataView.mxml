@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx">
+	<fx:Script>
+		<![CDATA[
+			import app.effectview.data.EffectCommonData;
+			import app.manager.ModelManager;
+			
+			import com.hmh.SkeletonPreview;
+			
+			import deltax.graphic.effect.EffectManager;
+			import deltax.graphic.effect.data.EffectData;
+			import deltax.graphic.effect.data.unit.EffectUnitData;
+			import deltax.graphic.effect.render.Effect;
+			import deltax.graphic.effect.render.EffectUnitMsgID;
+			import deltax.graphic.effect.render.unit.ModelConsole;
+			import deltax.graphic.scenegraph.object.RenderObjLinkType;
+			import deltax.graphic.scenegraph.object.RenderObject;
+			
+			import mx.controls.Alert;
+			
+			import spark.events.TextOperationEvent;
+			private var _info:EffectData;
+			public var deleteTheEffectFun:Function;
+			
+			public var effectMainView:EffectMainView;
+			
+			public static var copyEffectData:EffectData;
+			
+			public function set info(effectData:EffectData):void{
+				this._info = effectData;
+				updateData();
+			}
+			public function get info():EffectData{
+				return this._info;
+			}
+			
+			private function updateData():void{
+				m_fullName.text = info.m_fullName;
+				m_timeRange.text = info.m_timeRange.toString();
+				m_description.text = info.m_description;
+				if( info.m_attachAniNames)
+					m_attachAniNames.text = info.m_attachAniNames.join(";");
+				else
+					m_attachAniNames.text = "";
+				effectUnitDataNum.text = info.m_effectUnitDatas.length.toString();
+			}
+			
+			public function editEffectUnitDataHandler(event:MouseEvent = null):void
+			{	
+				ModelTimelineView.instance.clearModel();
+				//
+				previewEffectHandler(null);
+				
+				/*
+				var view:EffectUnitDataView = PopUpManager.createPopUp(this,EffectUnitDataView,false) as EffectUnitDataView;
+				PopUpManager.centerPopUp(view);
+				view.effectData = info;
+				view.previewEffectFun = previewEffectHandler;
+				view.info = info.m_effectUnitDatas;*/
+				
+				effectMainView.effectUnitDataView.effectData = info;
+				//effectMainView.effectUnitDataView.info = info.m_effectUnitDatas;
+				effectMainView.effectTimelineView.info = info.m_effectUnitDatas;
+				effectMainView.effectTimelineView.previewEffectFun = previewEffectHandler;
+				
+				EffectCommonData.Instance.curEffectData = info;
+				effectMainView.fullName.text = this.m_fullName.text;
+				effectMainView.curEffectUrlChangeHanlder();
+				//
+				effectMainView.effectTimelineView.intervalTime.text = int(int(effectMainView.effectTime.text)/(984/8))+"毫秒";
+			}
+			
+			protected function previewEffectHandler(event:MouseEvent = null):void
+			{
+				var effect:Effect =  info.effectGroup.createEffect(info.m_fullName);
+				if(effect == null)
+				{
+					Alert.show("effect is null");
+					return;
+				}
+				//
+				var renderObject:RenderObject = new RenderObject();
+				renderObject.addChild(effect);
+				effect.coordObject = ModelManager.getInstance().coordRenderObject;
+				effect.coordObject.position.setTo(0,0,0);
+				ModelManager.getInstance().setRenderObject(renderObject);
+
+				if(ModelManager.getInstance().curEffect is ModelConsole)
+				{
+					(ModelManager.getInstance().curEffect as ModelConsole).resetModel();
+				}
+				ModelManager.getInstance().curEffect = effect;				
+				SkeletonPreview.getInstance().add(ModelManager.getInstance().curEffect);
+				EffectManager.instance.renderState = EffectManager.PLAY;
+				//
+				if(ModelTimelineView.instance.curRenderObject)
+				{
+					var arr:Array = info.effectGroup.name.split("/");
+					var linkName:String = arr[arr.length - 1];
+					ModelTimelineView.instance.curRenderObject.addLinkObject(effect,linkName,RenderObjLinkType.CENTER);
+				}else
+				{
+					var len:uint = info.m_effectUnitDatas.length;
+					var effData:EffectUnitData;
+					for(var i:uint = 0;i<len;i++)
+					{
+						effData = info.m_effectUnitDatas[i];
+						if(effData.attachName&&effData.attachName.length>0&&effData.updatePos>0&&effData.amsName&&effData.amsName.length>0)
+						{
+							ModelTimelineView.instance.isBindEffect =true;
+							ModelTimelineView.instance.curEffectData = effData;
+							ModelTimelineView.instance.selectEffectModel(effData.amsName);
+							break;
+						}
+					}
+				}
+			}
+			
+			protected function changeInfoHandler(event:TextOperationEvent):void
+			{
+				info.m_fullName = this.m_fullName.text;
+				info.m_timeRange = uint(this.m_timeRange.text);
+				info.m_description = this.m_description.text;
+				var arr:Array = this.m_attachAniNames.text.split(";");
+				info.m_attachAniNames = new Vector.<String>();
+				for (var i:uint = 0; i < arr.length; i++ ) {
+					if(arr[i])
+						info.m_attachAniNames.push(arr[i]);
+				}
+			}
+			
+			protected function deleteTheEffect(event:MouseEvent):void
+			{
+				var view:EffectDataView = this;
+				Alert.show("确认删除此特效","警告",4,null,function():void
+				{
+					if(deleteTheEffectFun!=null)
+					{
+						deleteTheEffectFun(view);
+					}
+				})
+			}
+			
+			protected function sendMsgPolygonChainHandler(event:MouseEvent):void
+			{
+				ModelManager.getInstance().curEffect.sendMsgToUnits(EffectUnitMsgID.SET_POLYCHAIN_DEST_POS, new Vector3D());			
+			}
+			
+			protected function copyEffectDataHandler(event:MouseEvent):void
+			{
+				copyEffectData = info.clone();
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<s:Label x="10" y="16" text="特效名字"/>
+	<s:TextInput id="m_fullName" x="85" y="10" change="changeInfoHandler(event)"/>
+	<s:Label x="10" y="49" text="特效时间"/>
+	<s:TextInput id="m_timeRange" x="85" y="44" change="changeInfoHandler(event)"/>
+	<s:Label x="10" y="84" text="特效描述"/>
+	<s:TextInput id="m_description" x="85" y="78" width="370" change="changeInfoHandler(event)"/>
+	<s:Label x="10" y="114" text="关联骨骼组"/>
+	<s:TextInput id="m_attachAniNames" x="85" y="109" width="370" change="changeInfoHandler(event)"/>
+	<s:Label x="10" y="144" text="子特效数量"/>
+	<mx:HRule x="10" y="0" width="100%" strokeColor="0" strokeWidth="2"/>
+	<s:Label id="effectUnitDataNum" x="85" y="144" color="#FF0000" text="(0)"/>
+	<s:Button x="10" y="167" label="编辑特效" click="editEffectUnitDataHandler(event)"/>
+	<s:Button x="85" y="167" label="预览特效" click="previewEffectHandler(event)"/>
+	<s:Button x="237" y="167" width="70" label="删除特效" click="deleteTheEffect(event)"/>
+	<s:Button x="161" y="167" width="70" label="复制特效" click="copyEffectDataHandler(event)"/>
+	<s:Label x="218" y="16" color="#FF0000" text="注：特效名字不能使用中文，请使用英文、数字或下划线"/>
+	<s:Label x="218" y="51" color="#FF0000" text="注：单位（毫秒）"/>
+</s:Group>

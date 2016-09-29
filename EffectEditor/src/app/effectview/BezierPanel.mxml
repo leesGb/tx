@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   width="200" height="202" textAlign="center" title="曲线参数" creationComplete="titlewindow1_creationCompleteHandler(event)"
+			   close="titlewindow1_closeHandler(event)">
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import deltax.common.math.MathUtl;
+			import deltax.graphic.effect.data.unit.EffectUnitData;
+			
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			private var m_info:EffectUnitData;
+			public static const UPDATE_DATA:String="";
+			public function get info():EffectUnitData
+			{
+				return m_info;
+			}
+
+			public function set info(value:EffectUnitData):void
+			{
+				m_info = value;
+				updateData();
+			}
+
+			protected function titlewindow1_creationCompleteHandler(event:FlexEvent):void
+			{
+								
+			}
+			
+			protected function button1_clickHandler(event:MouseEvent):void
+			{		
+				var index1:int = int(startPId.text);
+				var index2:int = int(endPId.text); 
+				var start:Vector3D=m_info.offsets[index1];
+				var c1:Vector3D = getVector3D(controlP1Id.text);
+				var c2:Vector3D = getVector3D(controlP2Id.text);
+				var end:Vector3D=m_info.offsets[index2];
+				var t:Number = Number(tId.text)||0.1;
+				var newNode:Array=[];
+				var num:int = int(1/t);
+				try{
+					for(var i:int=1;i<num;i++){
+						var p:Vector3D=MathUtl.bezierInterpolate3D(start,c1,c2,end,t*i);
+						newNode.push(p);
+					}
+					//return;
+					var len:Number=m_info.m_offsetKeys[index2]-m_info.m_offsetKeys[index1];
+					var del:Number = len/(num+1);					
+					var startKey:Number = m_info.m_offsetKeys[index1];
+					var j:int;
+					for(j=0;j<newNode.length;j++){
+						m_info.offsets.splice(index1+j+1,0,newNode[j]);						
+					}
+					for(j=1;j<newNode.length+1;j++){
+						var keydel:Number = startKey+del*(j+1);						
+						m_info.m_offsetKeys.splice(index1+j,0,keydel);
+					}
+					dispatchEvent(new Event(UPDATE_DATA));
+					titlewindow1_closeHandler(null);
+					
+				}catch(ee:Error){
+					trace(ee.getStackTrace());
+				}
+			}
+			
+			private function getVector3D(str:String):Vector3D
+			{
+				var arr:Array=str.split(" ");
+				return new Vector3D(Number(arr[0])||0,Number(arr[1])||0,Number(arr[2])||0);
+			}
+			
+			private function updateData():void
+			{
+				// TODO Auto Generated method stub
+				
+			}
+			
+			protected function titlewindow1_closeHandler(event:CloseEvent):void
+			{
+				// TODO Auto-generated method stub
+				PopUpManager.removePopUp(this);
+			}
+			
+		]]>
+	</fx:Script>
+	<s:Label x="10" y="10" text="起点索引"/>
+	<s:Label x="16" y="35" text="控制点1"/>
+	<s:Label x="15" y="61" text="控制点2"/>
+	<s:Label x="10" y="87" text="终点索引"/>
+	<s:Label x="33" y="112" text="步长"/>
+	<s:TextInput id="startPId" x="66" y="4" prompt="0" textAlign="left"/>
+	<s:TextInput id="controlP1Id" x="66" y="30" prompt="0 0 0" textAlign="left"/>
+	<s:TextInput id="controlP2Id" x="66" y="55" prompt="0 0 0" textAlign="left"/>
+	<s:TextInput id="endPId" x="66" y="82" prompt="1" textAlign="left"/>
+	<s:TextInput id="tId" x="65" y="109" text="0.1" textAlign="left" toolTip="小于0.5"/>
+	<s:Button x="65" y="139" label="插入" click="button1_clickHandler(event)"/>
+</s:TitleWindow>

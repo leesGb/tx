@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   width="148" height="188" title="image" close="titlewindow1_closeHandler(event)">
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import deltax.common.resource.Enviroment;
+			import deltax.graphic.manager.IResource;
+			import deltax.graphic.manager.ResourceManager;
+			import deltax.graphic.manager.ResourceType;
+			import deltax.graphic.texture.BitmapDataResource3D;
+			
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.graphics.codec.PNGEncoder;
+			import mx.managers.PopUpManager;
+			private var _imageUrl:String;
+			public function set imageUrl(value:String):void{
+				this._imageUrl = value;
+				if(this._imageUrl)
+					updateData();
+			}
+			public function get imageUrl():String{
+				return this._imageUrl;
+			}
+			
+			private function updateData():void{
+				var url:String = Enviroment.ResourceRootPath + imageUrl;
+				ResourceManager.instance.getResource(this.imageUrl, ResourceType.TEXTURE3D, onTextureLoaded);
+				
+			}
+			
+			private function onTextureLoaded(b:IResource, _arg2:Boolean):void{
+				this.title = imageUrl;
+				
+				var bmdResource:BitmapDataResource3D = b as BitmapDataResource3D;
+				imageId.width = bmdResource.width;
+				imageId.height = bmdResource.height;
+				
+				if(bmdResource.width == 0 || bmdResource.height == 0){
+					Alert.show("no img:" + imageUrl);
+					return;
+				}
+				
+				var bmd:BitmapData;
+				if(bmdResource.isAlphaJpegFormat){
+					bmd = new BitmapData(bmdResource.width,bmdResource.height,true,0x00000000);
+				}else{
+					bmd = new BitmapData(bmdResource.width,bmdResource.height,false,0x00000000);
+				}
+				var bmdByteArray:ByteArray = new ByteArray();
+				bmdByteArray.writeBytes(bmdResource.bitmapData,0,bmdResource.bitmapData.length);
+				bmdByteArray.position = 0;
+				bmdByteArray.endian = Endian.LITTLE_ENDIAN;
+				bmd.setPixels(new Rectangle(0,0,bmdResource.width,bmdResource.height),bmdByteArray);
+				
+				imageId.source = bmd;
+				
+				this.width = imageId.width + 20;
+				this.height = imageId.height + 60;
+			}
+			
+			protected function titlewindow1_closeHandler(event:CloseEvent):void
+			{
+				// TODO Auto-generated method stub
+				PopUpManager.removePopUp(this);
+			}
+			
+		]]>
+	</fx:Script>
+	<s:Image id="imageId" x="10" y="10" width="128" height="128"/>
+	
+</s:TitleWindow>
