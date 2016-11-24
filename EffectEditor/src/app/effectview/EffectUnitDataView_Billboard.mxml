@@ -2,35 +2,35 @@
 <effectview:EffectUnitDataView_Abst xmlns:fx="http://ns.adobe.com/mxml/2009" 
 									xmlns:s="library://ns.adobe.com/flex/spark" 
 									xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:effectview="app.effectview.*"
-		 width="828" height="684" initialize="effectunitdataview_abst1_initializeHandler(event)" creationComplete="effectunitdataview_abst1_creationCompleteHandler(event)">
+		 							width="828" height="684" 
+									initialize="effectunitdataview_abst1_initializeHandler(event)" 
+		 							creationComplete="effectunitdataview_abst1_creationCompleteHandler(event)">
 	<fx:Declarations>
 		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
 	</fx:Declarations>
 	<fx:Script>
 		<![CDATA[
-			import deltax.common.math.MathUtl;
-			import deltax.graphic.effect.data.unit.BillboardData;
-			import deltax.graphic.effect.data.unit.EffectUnitData;
-			
-			import app.effectview.data.EffectTypeMode;
-			
 			import mx.collections.ArrayCollection;
-			import mx.controls.Alert;
 			import mx.events.FlexEvent;
 			
 			import spark.events.TextOperationEvent;
 			
-			override public function set info(value:EffectUnitData):void
+			import app.effectview.data.EffectTypeMode;
+			
+			import deltax.common.math.MathUtl;
+			import deltax.graphic.effect.data.unit.BillboardData;
+			import deltax.graphic.effect.data.unit.EffectUnitData;
+			
+			protected function effectunitdataview_abst1_initializeHandler(event:FlexEvent):void
 			{
-				super.info = value;
-				baseId.info = value;
-				
-				updateData();
+				m_faceType.dataProvider = new ArrayCollection(EffectTypeMode.FaceTypes);
+				m_blendMode.dataProvider = new ArrayCollection(EffectTypeMode.BlendModes);
+				m_zTestMode.dataProvider = new ArrayCollection(EffectTypeMode.DepthTestModes);
 			}
 			
-			public function get theInfo():BillboardData
+			protected function effectunitdataview_abst1_creationCompleteHandler(event:FlexEvent):void
 			{
-				return _info as BillboardData
+				updateData();
 			}
 			
 			private function updateData():void
@@ -45,19 +45,19 @@
 				this.m_rotateAxis_y.text = tmp0.y.toFixed(2);
 				this.m_rotateAxis_z.text = tmp0.z.toFixed(2);
 				
-//				trace(theInfo.m_rotateAxis);
-
-//				trace(theInfo.m_rotateAxis);
-//				this.m_rotateAxisId.text = tmp0.x.toFixed(2)+" "+tmp0.y.toFixed(2)+" "+tmp0.z.toFixed(2);
-//				trace(theInfo.m_rotateAxis);
+				//				trace(theInfo.m_rotateAxis);
+				
+				//				trace(theInfo.m_rotateAxis);
+				//				this.m_rotateAxisId.text = tmp0.x.toFixed(2)+" "+tmp0.y.toFixed(2)+" "+tmp0.z.toFixed(2);
+				//				trace(theInfo.m_rotateAxis);
 				this.angleVId.text = theInfo.m_rotateAxis.length.toString();
-//				trace(theInfo.m_rotateAxis);
-//				var tmp0:Vector3D;
+				//				trace(theInfo.m_rotateAxis);
+				//				var tmp0:Vector3D;
 				tmp0 = theInfo.m_normal;
 				tmp0.normalize();
 				//m_normalId.text = getAngle(Math.acos(tmp0.x)).toFixed(2)+" "+getAngle(Math.acos(tmp0.y)).toFixed(2)+" "+getAngle(Math.acos(tmp0.z)).toFixed(2);
-//				m_normalId.text = tmp0.x.toFixed(2)+" "+tmp0.y.toFixed(2)+" "+tmp0.z.toFixed(2);
-//				tmp0 = theInfo.m_normal;
+				//				m_normalId.text = tmp0.x.toFixed(2)+" "+tmp0.y.toFixed(2)+" "+tmp0.z.toFixed(2);
+				//				tmp0 = theInfo.m_normal;
 				this.m_normal_x.text = tmp0.x.toFixed(2);
 				this.m_normal_y.text = tmp0.y.toFixed(2);
 				this.m_normal_z.text = tmp0.z.toFixed(2);
@@ -72,7 +72,21 @@
 				this.m_synRotate.selected = theInfo.m_synRotate;
 				this.m_bindOnlyStart.selected = theInfo.m_bindOnlyStart;
 				
-//				var tt:Number = theInfo.m_normal.x * theInfo.m_normal.x + theInfo.m_normal.y * theInfo.m_normal.y + theInfo.m_normal.z*theInfo.m_normal.z
+				//				var tt:Number = theInfo.m_normal.x * theInfo.m_normal.x + theInfo.m_normal.y * theInfo.m_normal.y + theInfo.m_normal.z*theInfo.m_normal.z
+			}
+			
+			override public function set info(value:EffectUnitData):void
+			{
+				super.info = value;
+				
+				baseId.info = value;
+				
+				updateData();
+			}
+			
+			public function get theInfo():BillboardData
+			{
+				return _info as BillboardData
 			}
 			
 			/**
@@ -128,20 +142,6 @@
 				theInfo.m_synRotate = m_synRotate.selected;
 				theInfo.m_bindOnlyStart = m_bindOnlyStart.selected;
 			}
-			
-			protected function effectunitdataview_abst1_initializeHandler(event:FlexEvent):void
-			{
-				// TODO Auto-generated method stub
-				m_faceType.dataProvider = new ArrayCollection(EffectTypeMode.FaceTypes);
-				m_blendMode.dataProvider = new ArrayCollection(EffectTypeMode.BlendModes);
-				m_zTestMode.dataProvider = new ArrayCollection(EffectTypeMode.DepthTestModes);
-			}
-			
-			protected function effectunitdataview_abst1_creationCompleteHandler(event:FlexEvent):void
-			{
-				updateData();
-			}
-					
 			
 //			protected function inputkeyDownHandler(event:KeyboardEvent):void
 //			{
@@ -239,47 +239,48 @@
 			
 		]]>
 	</fx:Script>
+	
 	<s:Label x="10" y="14" text="初始旋转角度：" toolTip="角度"/>
+	<s:NumericStepper id="m_startAngle" x="95" y="10" width="165" maximum="360" minimum="-1000" stepSize="1" change="changeInfoHandler(event)"/>
 	<s:Label x="46" y="42" text="宽高比：" toolTip="长宽比"/>
-	<s:Label x="34" y="342" text="z乖离率："/>
-	<s:Label x="46" y="91" text="旋转轴：" toolTip="自身旋转轴"/>
-	<s:Label x="46" y="66" text="角速度：" toolTip="自身旋转轴"/>
 	<s:TextInput id="m_widthRatio" x="95" y="36" width="165" change="changeInfoHandler(event)"/>
-	<s:TextInput id="m_zBias" x="95" y="335" width="163" change="changeInfoHandler(event)"
-				 enabled="false"/>	
+	<s:Label x="46" y="66" text="角速度：" toolTip="自身旋转轴"/>
+	<s:TextInput id="angleVId" x="95" y="62" width="165" change="m_rotateAxisChangeHandler(event)"/>
+	
+	<s:Label x="46" y="91" text="旋转轴：" toolTip="自身旋转轴"/>
+	<s:Label x="78" y="112" width="17" text="x："/>
+	<s:TextInput x="95" y="159" width="40" id="m_normal_x" change="m_normalChangeHandler(event)"/>
+	<s:Label x="140" y="114" width="17" text="y："/>
+	<s:TextInput x="157" y="159" width="40" id="m_normal_y" change="m_normalChangeHandler(event)"/>
+	<s:Label x="204" y="114" width="17" text="z："/>
+	<s:TextInput x="220" y="158" width="40" id="m_normal_z" change="m_normalChangeHandler(event)"/>
+	
 	<s:Label x="47" y="139" text="法向量：" toolTip=""/>
+	<s:Label x="78" y="163" text="x："/>
+	<s:TextInput id="m_rotateAxis_x" x="95" y="108" width="40" change="m_rotateAxisChangeHandler(event)" enabled="true"/>
+	<s:Label x="140" y="165" text="y："/>
+	<s:TextInput id="m_rotateAxis_y" x="157" y="108" width="40" change="m_rotateAxisChangeHandler(event)" enabled="true"/>
+	<s:Label x="204" y="165" text="z："/>
+	<s:TextInput id="m_rotateAxis_z" x="220" y="108" width="40" change="m_rotateAxisChangeHandler(event)" enabled="true"/>
+	
 	<s:Label x="23" y="194" text="缩放最小值："/>
-	<s:Label x="23" y="222" text="缩放最大值："/>
-	<s:Label x="35" y="249" text="面向类型："/>
 	<s:TextInput id="m_minSize" x="95" y="190" width="165" change="changeInfoHandler(event)"/>
+	<s:Label x="23" y="222" text="缩放最大值："/>
 	<s:TextInput id="m_maxSize" x="95" y="217" width="165" change="changeInfoHandler(event)"/>
+	<s:Label x="35" y="249" text="面向类型："/>
+	<s:ComboBox id="m_faceType" x="95" y="244" width="164" change="changeInfoHandler(event)"/>
 	<s:Label x="35" y="278" text="混合模式："/>
+	<s:ComboBox id="m_blendMode" x="95" y="273" width="164" change="changeInfoHandler(event)"/>
 	<s:Label x="11" y="305" text="深度测试模式："/>
-	<effectview:EffectUnitDataView_Base id="baseId" x="299" y="1">
-	</effectview:EffectUnitDataView_Base>
+	<s:ComboBox id="m_zTestMode" x="95" y="302" width="163" change="changeInfoHandler(event)"/>
+	<s:Label x="34" y="342" text="z乖离率："/>
+	<s:TextInput id="m_zBias" x="95" y="335" width="163" change="changeInfoHandler(event)" enabled="false"/>	
+	
 	<s:CheckBox id="m_enableLight" x="95" y="372" label="能否接受灯光" change="changeInfoHandler(event)" enabled="false"/>
 	<s:CheckBox id="m_synRotate" x="95" y="392" label="异步旋转" change="changeInfoHandler(event)" enabled="true"/>
 	<s:CheckBox id="m_bindOnlyStart" x="95" y="413" label="只在开始时绑定" change="changeInfoHandler(event)" enabled="true"/>
-	<s:ComboBox id="m_faceType" x="95" y="244" width="164" change="changeInfoHandler(event)"/>
-	<s:ComboBox id="m_blendMode" x="95" y="273" width="164" change="changeInfoHandler(event)"/>
-	<s:ComboBox id="m_zTestMode" x="95" y="302" width="163" change="changeInfoHandler(event)"/>
-	<s:NumericStepper id="m_startAngle" x="95" y="10" width="165" maximum="360" minimum="-1000"
-					  stepSize="1" change="changeInfoHandler(event)"/>
-	<s:TextInput x="95" y="159" width="40" id="m_normal_x" change="m_normalChangeHandler(event)"/>
-	<s:TextInput x="157" y="159" width="40" id="m_normal_y" change="m_normalChangeHandler(event)"/>
-	<s:TextInput x="220" y="158" width="40" id="m_normal_z" change="m_normalChangeHandler(event)"/>
-	<s:TextInput id="angleVId" x="95" y="62" width="165" change="m_rotateAxisChangeHandler(event)"/>
-	<s:TextInput id="m_rotateAxis_x" x="95" y="108" width="40"
-				 change="m_rotateAxisChangeHandler(event)" enabled="true"/>
-	<s:TextInput id="m_rotateAxis_y" x="157" y="108" width="40"
-				 change="m_rotateAxisChangeHandler(event)" enabled="true"/>
-	<s:TextInput id="m_rotateAxis_z" x="220" y="108" width="40"
-				 change="m_rotateAxisChangeHandler(event)" enabled="true"/>
-	<s:Label x="78" y="112" width="17" text="x："/>
-	<s:Label x="140" y="114" width="17" text="y："/>
-	<s:Label x="204" y="114" width="17" text="z："/>
-	<s:Label x="78" y="163" text="x："/>
-	<s:Label x="140" y="165" text="y："/>
-	<s:Label x="204" y="165" text="z："/>
+	
+	<effectview:EffectUnitDataView_Base id="baseId" x="299" y="1"/>
+	
 	<mx:VRule x="299" y="0" height="100%" strokeColor="0" strokeWidth="2"/>
 </effectview:EffectUnitDataView_Abst>

@@ -8,13 +8,15 @@
 	</fx:Declarations>
 	<fx:Script>
 		<![CDATA[
-			import com.hmh.utils.FileHelper;
+			import app.effectview.data.EffectCommonData;
 			
 			import deltax.common.resource.Enviroment;
 			import deltax.graphic.effect.data.unit.EffectUnitData;
 			import deltax.graphic.effect.data.unit.ModelConsoleData;
 			
-			import app.effectview.data.EffectCommonData;
+			import utils.FileHelper;
+			
+			
 			public function get theInfo():ModelConsoleData{
 				return this._info as ModelConsoleData;
 			}

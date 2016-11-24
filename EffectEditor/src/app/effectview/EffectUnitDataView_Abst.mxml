@@ -1,21 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 <s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
 		 xmlns:s="library://ns.adobe.com/flex/spark" 
-		 xmlns:mx="library://ns.adobe.com/flex/mx" width="400" height="300" backgroundColor="#b1b1b1" borderVisible="false">
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 width="400" 
+		 height="300" 
+		 backgroundColor="#b1b1b1" 
+		 borderVisible="false">
+	
 	<fx:Declarations>
 		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
 	</fx:Declarations>
 	<fx:Script>
+		
 		<![CDATA[
 			import deltax.graphic.effect.data.unit.EffectUnitData;
+			
 			protected var _info:EffectUnitData;
 			
-			public function set info(value:EffectUnitData):void{
+			public function get info():EffectUnitData
+			{
+				return _info as EffectUnitData;
+			}
+			public function set info(value:EffectUnitData):void
+			{
 				this._info = value;
 			}
-			public function get info():EffectUnitData{
-				return _info as EffectUnitData;
-			}	
+			
+			
+			
 		]]>
 	</fx:Script>
 </s:BorderContainer>

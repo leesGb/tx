@@ -4,10 +4,11 @@
 		 xmlns:mx="library://ns.adobe.com/flex/mx">
 	<fx:Script>
 		<![CDATA[
-			import app.effectview.data.EffectCommonData;
-			import app.manager.ModelManager;
+			import mx.controls.Alert;
 			
-			import com.hmh.SkeletonPreview;
+			import spark.events.TextOperationEvent;
+			
+			import app.effectview.data.EffectCommonData;
 			
 			import deltax.graphic.effect.EffectManager;
 			import deltax.graphic.effect.data.EffectData;
@@ -18,9 +19,11 @@
 			import deltax.graphic.scenegraph.object.RenderObjLinkType;
 			import deltax.graphic.scenegraph.object.RenderObject;
 			
-			import mx.controls.Alert;
+			import manager.ModelManager;
 			
-			import spark.events.TextOperationEvent;
+			
+			
+			
 			private var _info:EffectData;
 			public var deleteTheEffectFun:Function;
 			

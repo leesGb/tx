@@ -9,20 +9,32 @@
 	</fx:Declarations>
 	<fx:Script>
 		<![CDATA[
-			import app.Game;
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.DragEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
 			import app.constant.MainConstant;
 			import app.effectview.data.EffectCommonData;
 			import app.effectview.data.EffectTreeVo;
-			import app.manager.ModelManager;
-			
-			import com.hmh.utils.FileHelper;
 			
 			import deltax.common.resource.Enviroment;
 			import deltax.graphic.effect.EffectManager;
 			import deltax.graphic.effect.EffectUnitType;
-			import deltax.graphic.effect.data.EffectData;
-			import deltax.graphic.effect.data.EffectGroup;
-			import deltax.graphic.effect.data.unit.*;
+			import deltax.graphic.effect.data.unit.BillboardData;
+			import deltax.graphic.effect.data.unit.CameraShakeData;
+			import deltax.graphic.effect.data.unit.DynamicLightData;
+			import deltax.graphic.effect.data.unit.EffectUnitData;
+			import deltax.graphic.effect.data.unit.ModelAnimationData;
+			import deltax.graphic.effect.data.unit.ModelConsoleData;
+			import deltax.graphic.effect.data.unit.ModelMaterialData;
+			import deltax.graphic.effect.data.unit.NullEffectData;
+			import deltax.graphic.effect.data.unit.ParticleSystemData;
+			import deltax.graphic.effect.data.unit.PolygonChainData;
+			import deltax.graphic.effect.data.unit.PolygonTrailData;
+			import deltax.graphic.effect.data.unit.ScreenFilterData;
+			import deltax.graphic.effect.data.unit.SoundFXData;
 			import deltax.graphic.effect.data.unit.modelmaterial.AlphaInfo;
 			import deltax.graphic.effect.data.unit.modelmaterial.BrightnessInfo;
 			import deltax.graphic.effect.data.unit.modelmaterial.MaterialFxProperties;
@@ -30,15 +42,11 @@
 			import deltax.graphic.effect.data.unit.modelmaterial.UVInfo;
 			import deltax.graphic.effect.render.unit.EffectUnit;
 			import deltax.graphic.effect.render.unit.ParticleSystem;
-			import deltax.graphic.manager.IResource;
-			import deltax.graphic.manager.ResourceManager;
-			import deltax.graphic.manager.ResourceType;
 			
-			import mx.collections.ArrayCollection;
-			import mx.controls.Alert;
-			import mx.events.DragEvent;
-			import mx.events.FlexEvent;
-			import mx.managers.PopUpManager;
+			import manager.ModelManager;
+			
+			
+			
 			
 			public var effectMainView:EffectMainView;
 			public var previewEffectFun:Function;
@@ -852,8 +860,6 @@
 				<s:Label x="5" y="68" text="每格时间"/>
 				<s:Label id="intervalTime" x="58" y="70" color="#FF0000" text="0"/>
 				<s:CheckBox x="216" y="3" label="隐藏地表" click="checkbox1_clickHandler(event)" id="hideTerrain"/>
-				<!--<s:Button id="allTransform" x="647" y="3" width="438" height="39" label="转换所有"
-				click="allTransform_clickHandler(event)" enabled="false" visible="false"/>-->
 			</s:BorderContainer>
 		</s:Group>
 	</s:Scroller>

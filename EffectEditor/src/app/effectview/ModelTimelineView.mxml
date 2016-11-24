@@ -8,12 +8,13 @@
 	</fx:Declarations>
 	<fx:Script>
 		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.core.UIComponent;
+			import mx.events.FlexEvent;
+			
+			import spark.events.IndexChangeEvent;
+			
 			import app.effectview.data.EffectCommonData;
-			import app.equipment.DressingRoom;
-			import app.equipment.EquipClassType;
-			import app.equipment.EquipItemParam;
-			import app.equipment.EquipsInUse;
-			import app.manager.ModelManager;
 			
 			import deltax.common.math.Quaternion;
 			import deltax.common.resource.Enviroment;
@@ -31,11 +32,15 @@
 			import deltax.graphic.scenegraph.object.RenderObjLinkType;
 			import deltax.graphic.scenegraph.object.RenderObject;
 			
-			import mx.collections.ArrayCollection;
-			import mx.core.UIComponent;
-			import mx.events.FlexEvent;
+			import equipments.DressingRoom;
+			import equipments.EquipClassType;
+			import equipments.EquipItemParam;
+			import equipments.EquipsInUse;
 			
-			import spark.events.IndexChangeEvent;
+			import manager.ModelManager;
+			
+			
+			
 			
 			public static var instance:ModelTimelineView;
 			public static const CHANGE_BIND:String = "CHANGE_BIND";

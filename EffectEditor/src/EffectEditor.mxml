@@ -9,21 +9,23 @@
 	</fx:Declarations>
 	<fx:Script>
 		<![CDATA[
-			import app.Game;
-			import app.config.AppConfig;
-			import app.constant.MainConstant;
-			import app.manager.ModelManager;
-			import app.update.AppUpdater;
+			import mx.core.UIComponent;
 			
-			import com.hmh.utils.FileHelper;
+			import app.constant.MainConstant;
 			
 			import deltax.common.Util;
 			import deltax.common.resource.Enviroment;
 			import deltax.gui.component.event.DXWndMouseEvent;
 			
-			import mx.core.UIComponent;
-			import mx.events.ResizeEvent;
-			import mx.managers.LayoutManager;
+			import manager.ModelManager;
+			
+			import update.AppConfig;
+			import update.AppUpdater;
+			
+			import utils.FileHelper;
+			
+			
+			
 			
 			private var delayId:uint;
 			private var nudeIdTIs:Array;
@@ -126,6 +128,18 @@
 				modelTimeLine.updateFileTree();
 				//
 				ModelManager.getInstance().importCoordAms();
+				
+				showFpsInfo();
+			}
+			
+			private function showFpsInfo():void
+			{
+				var fpsInfo:AppFpsUtil = new AppFpsUtil();
+				fpsInfo.alpha = 0.6;
+				fpsInfo.y = 350;
+				var ui:UIComponent = new UIComponent();
+				ui.addChild(fpsInfo);
+				viewContainer.addElement(ui);
 			}
 			
 			private function processEvent(e:Event):void
@@ -155,7 +169,7 @@
 	<mx:DividedBox width="100%" height="100%" direction="vertical" verticalGap="3">
 		<mx:HDividedBox id="h1" width="100%" height="100%" horizontalGap="3" minHeight="300">
 			<s:BorderContainer id="viewContainer" x="0" y="0" width="45%" height="100%" minWidth="300" minHeight="300"
-							   borderVisible="true"/>
+							   borderVisible="true" backgroundAlpha="0"/>
 			
 			<s:BorderContainer width="55%" height="100%" borderVisible="true" backgroundAlpha="0">
 				<effectview:EffectMainView id="effectMainView" width="100%" height="100%" effectTimelineView="{effectTimeline}"/>	

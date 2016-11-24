@@ -4,25 +4,25 @@
 			   xmlns:mx="library://ns.adobe.com/flex/mx" width="868" height="640" title="material list view"  close="titlewindow1_closeHandler(event)" initialize="titlewindow1_initializeHandler(event)">
 	<fx:Script>
 		<![CDATA[
-			import com.hmh.utils.FileHelper;
+			import flash.display3D.Context3DBlendFactor;
 			
-			import deltax.appframe.BaseApplication;
+			import mx.collections.ArrayCollection;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			
+			import spark.components.RadioButtonGroup;
+			
 			import deltax.common.resource.Enviroment;
 			import deltax.graphic.manager.IResource;
 			import deltax.graphic.manager.ResourceManager;
 			import deltax.graphic.manager.ResourceType;
 			import deltax.graphic.material.Material;
-			import deltax.graphic.material.SkinnedMeshMaterial;
 			
-			import flash.display3D.Context3DBlendFactor;
-			import flash.display3D.Context3DTriangleFace;
+			import utils.FileHelper;
 			
-			import mx.collections.ArrayCollection;
-			import mx.events.CloseEvent;
-			import mx.events.FlexEvent;
-			import mx.managers.PopUpManager;
 			
-			import spark.components.RadioButtonGroup;
+			
+			
 			
 			private var fileList:Array;
 			[Bindable]

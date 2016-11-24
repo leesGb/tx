@@ -8,12 +8,12 @@
 	</fx:Declarations>
 	<fx:Script>
 		<![CDATA[
-			import com.hmh.utils.FileHelper;
-			
 			import deltax.common.resource.Enviroment;
 			import deltax.graphic.effect.data.unit.EffectUnitData;
-			import deltax.graphic.effect.data.unit.ScreenFilterData;
 			import deltax.graphic.effect.data.unit.SoundFXData;
+			
+			import utils.FileHelper;
+			
 			
 			public function get theInfo():SoundFXData{
 				return this._info as SoundFXData;
